@@ -43,7 +43,6 @@ func (t *Table) Count(c string) (string, error) {
 		x = x + "&condition=" + c
 	}
 	_, body, err := t.Get(x)
-	fmt.Println("Count: body is", body)
 	//The API does not return valid JSON for getCount.sjs.
 	//The body is the count as a string.
 	return string(body), err
@@ -79,6 +78,32 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 		}
 	}
 	return resp, body, err
+}
+
+//LeftJoin reads two or more tables from the database.  The tables are
+//joined on the primary key of the left table.  For example, to find supporters
+//and their donations would require a table join statement like
+//'supporter(supporter_KEY)donation'.  The field supporter_KEY is the
+//primary key in supporter and a foreign key in donation.
+//
+//LeftJoin reads staring at offset.  It will retrieve either count
+//or 500 records, whichever is smaller.  If crit is defined, then that
+//is added to the URL as a condition to limit the number of supporters.
+//
+//LeftJoin converts data to JSON into the target.  The target should be
+//a slice of a record type.  The record type defines which fields to
+//return.
+func (t *Table) LeftJoin(offset int, count int, crit string, target interface{}) error {
+	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
+	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
+	if len(crit) != 0 {
+		x = x + "&condition=" + crit
+	}
+	_, body, err := t.Get(x)
+	if err == nil {
+		err = json.Unmarshal(body, &target)
+	}
+	return err
 }
 
 //Many reads many records via the API. Many reads the URL, applies the criteria if
