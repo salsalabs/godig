@@ -15,7 +15,7 @@ import (
 func (a *API) Authenticate(c CredData) error {
 	p := "https://%s/api/authenticate.sjs?json&email=%s&password=%s"
 	x := fmt.Sprintf(p, c.Host, c.Email, c.Password)
-	resp, body, err := a.respGet(x)
+	resp, body, err := a.Get(x)
 	if err != nil {
 		return err
 	}
@@ -44,47 +44,10 @@ func Credentials(cpath string) (CredData, error) {
 	return c, err
 }
 
-//Get retrieves the content for a URL.
-func (a *API) Get(u string) ([]byte, error) {
-	_, body, err := a.respGet(u)
-	return body, err
-}
-
-//Many reads many records via the API.  The caller provides a URL because the
-//read many URLs can be fairly complex.  Many reads the URL and returns up to
-//"count" or 500 records, whichever is smaller.  End of data is when count is zero.
-//The target is populated with an array of records.  An empty target means that
-//no more data is available.
-func (t *Table) Many(u string, offset int, count int, target interface{}) error {
-	x := fmt.Sprintf("%v&limit=%d,%d", u, offset, count)
-	body, err := t.Get(x)
-	if err == nil {
-		err = json.Unmarshal(body, &target)
-	}
-	return err
-}
-
-//One retrieves a single record using the provided primary key.  The "target"
-//is expected to be a struct that defines which fields should be extracted.
-//The record will be retrieved into "target".  You can use a Go trick to find
-//out if the record number was accurate.
-//
-//Note that there is not currently a way to retrieve all fields.
-//
-//TBD Determine how to retrieve all fields from a record.
-func (t *Table) One(key string, target interface{}) error {
-	x := fmt.Sprintf("https://%s/api/getObject.sjs?json&object=%s&key=%s", t.Host, t.Name, key)
-	body, err := t.Get(x)
-	if err == nil {
-		err = json.Unmarshal(body, target)
-	}
-	return err
-}
-
-//Resp reads the provided URL and returns the HTTP response, a body and an error.
-//Quote a lot like GET except for returning the response.  Useful for getting
-//to the internals after GET-ing a URL.  Not useful in day-to-day operations.
-func (a *API) respGet(u string) (*http.Response, []byte, error) {
+//Get reads the provided URL and returns the HTTP response, a body and an error.
+//Get also adds the cookies that the API needs to prove authentication.
+//Your application would probably be better off using One or Many.
+func (a *API) Get(u string) (*http.Response, []byte, error) {
 	var body []byte
 	var resp *http.Response
 	req, err := http.NewRequest("GET", u, nil)
@@ -102,19 +65,35 @@ func (a *API) respGet(u string) (*http.Response, []byte, error) {
 	return resp, body, err
 }
 
-//Raw reads many records via the API.  The caller provides a full URL.  Many reads
-//the URL and returns up to "count" or 500 records, whichever is smaller.  End of
-//data is when count is zero. The channel receives the "raw" JSON text from the API call.
-//Done receives a true at end of data.
-func (t *Table) Raw(u string, offset int, count int, cout chan []byte, done chan bool) error {
-	x := fmt.Sprintf("%v&limit=%d,%d", u, offset, count)
-	body, err := t.Get(x)
+//Many reads many records via the API.  The caller provides a URL because the
+//read many URLs can be fairly complex.  Many reads the URL and returns up to
+//"count" or 500 records, whichever is smaller.  End of data is when count is zero.
+//The target is populated with an array of records.  An empty target means that
+//no more data is available.
+func (t *Table) Many(offset int, count int, target interface{}) error {
+	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
+	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
+	_, body, err := t.Get(x)
 	if err == nil {
-		if len(body) <= 2 {
-			done <- true
-			return nil
-		}
-		cout <- body
+		err = json.Unmarshal(body, &target)
+	}
+	return err
+}
+
+//One retrieves a single record using the provided primary key.  The "target"
+//is expected to be a struct that defines which fields should be extracted.
+//The record will be retrieved into "target".  You can use a Go trick to find
+//out if the record number was accurate.
+//
+//Note that there is not currently a way to retrieve all fields.
+//
+//TBD Determine how to retrieve all fields from a record.
+func (t *Table) One(key string, target interface{}) error {
+	p := "https://%s/api/getObject.sjs?json&object=%s&key=%s"
+	x := fmt.Sprintf(p, t.Host, t.Name, key)
+	_, body, err := t.Get(x)
+	if err == nil {
+		err = json.Unmarshal(body, target)
 	}
 	return err
 }
@@ -135,19 +114,8 @@ func (t *Table) Save(key string, s string) error {
 	for _, c := range t.Cookies {
 		req.AddCookie(c)
 	}
-	// TODO: figure out what to do with the response from /save.
+	// TODO: figure out what to do with the an error response from /save.
 	_, err = t.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	//defer resp.Body.Close()
-	//body, err := ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	// 	return err
-	//}
-
-	// err = json.Unmarshal(body, &target)
-	//return err
 	return nil
 }
 
