@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
+	"sync"
 
 	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -14,58 +13,46 @@ type Fields struct {
 	SupporterKey string `json:"supporter_KEY"`
 	FirstName    string `json:"First_Name"`
 	LastName     string `json:"Last_Name"`
-	Email        string `json:"Email"`
+	Email        string
 }
 
-//Table is the table name to read.
-const Table = "supporter"
-
-//GetObjects is the template used to retrive records.
-const GetObjects = "https://%s/api/getObjects.sjs?json&object=%s&include=First_Name,Last_Name,Email"
-
-//Do accepts Fields records from a channel and displays them.
-func Do(cin chan Fields) {
-	for f := range cin {
-		log.Printf("%s %s %s %s", f.SupporterKey, f.FirstName, f.LastName, f.Email)
-	}
-}
-
-//Parse accepts a channel for a buffer and sends fields on another channel.
-func Parse(cin chan []byte, cout chan Fields, done chan bool) {
-	for body := range cin {
-		var target []Fields
-		err := json.Unmarshal(body, &target)
-		if err != nil {
-			log.Fatalf("Parse: JSON unmarshall error %v\n", err)
-		}
-		if len(target) == 0 {
-			done <- true
-			return
-		}
-		for _, f := range target {
-			cout <- f
-		}
-	}
-}
-
-//Fetch reads from Salsa via the API.  Each read puts a byte buffer
+//All reads from Salsa via the API.  Each read puts a byte buffer
 //onto the provided channel.
-func Fetch(t *godig.Table, c1 chan []byte) {
-	u := fmt.Sprintf(GetObjects, t.Host, Table)
-
-	// Read data and process it.
+func All(t *godig.Table, cout chan Fields) {
 	offset := 0
 	count := 500
-	done := make(chan bool)
 	for count > 0 {
+		log.Printf("All: %v offset %6d\n", t.Name, offset)
 		if offset > 0 && offset%5000 == 0 {
-			log.Printf("Offset: %6d\n", offset)
+			log.Printf("All: %v offset %6d\n", t.Name, offset)
 		}
-		t.Raw(u, offset, count, c1, done)
-		offset = offset + 500
+		var a []Fields
+		err := t.Many(offset, count, &a)
+		if err != nil {
+			log.Fatalf("All: %v offset %6d %v\n", t.Name, offset, err)
+			close(cout)
+			return
+		}
+		count = len(a)
+		if count == 0 {
+			log.Printf("All: %v offset %6d, done\n", t.Name, offset)
+			close(cout)
+			return
+		}
+		for _, r := range a {
+			cout <- r
+		}
+		offset = offset + count
 	}
-	<- done
-	log.Print("Done.")
+}
+
+//Use accepts Fields records from a channel and displays them.
+func Use(cin chan Fields) {
+	for f := range cin {
+		x := f.SupporterKey
+		x = x + "./"
+		//log.Printf("%s %s %s %s", f.SupporterKey, f.FirstName, f.LastName, f.Email)
+	}
 }
 
 //Mainline.  Find supporters and display some info about each.
@@ -78,13 +65,25 @@ func main() {
 		log.Fatalf("Authentication error: %+v\n", err)
 	}
 
-	c1 := make(chan []byte)
-	c2 := make(chan Fields)
-	done := make(chan bool)
-
-	go Do(c2)
-	go Parse(c1, c2, done)
 	t := a.Supporter()
-	go Fetch(&t, c1)
-	<-done
+	c := make(chan Fields, 100)
+	var wg sync.WaitGroup
+
+	log.Println("Main: start")
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		defer w.Done()
+		Use(c)
+	}(&wg)
+	log.Println("Main: Use started")
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		defer w.Done()
+		All(&t, c)
+	}(&wg)
+	log.Println("Main: All started")
+
+	log.Println("Main: waiting...")
+	wg.Wait()
+	log.Println("Main: done")
 }
