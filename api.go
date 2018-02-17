@@ -59,6 +59,17 @@ func Credentials(cpath string) (CredData, error) {
 	return c, err
 }
 
+//Describe shows returns the table structure as an array of field descriptors.
+func (t *Table) Describe(target interface{}) error {
+	p := "https://%s/api/describe.sjs?json&object=%s"
+	x := fmt.Sprintf(p, t.Host, t.Name)
+	_, body, err := t.Get(x)
+	if err == nil {
+		err = json.Unmarshal(body, target)
+	}
+	return err
+}
+
 //Get reads the provided URL and returns the HTTP response, a body and an error.
 //Get also adds the cookies that the API needs to prove authentication.
 //Your application would probably be better off using One or Many.
