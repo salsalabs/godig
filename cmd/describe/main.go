@@ -10,11 +10,12 @@ import (
 
 //Fields are the fields returned for each database field.
 type Fields struct {
-	Name         string
-	Nullable     string
-	Type         string
-	DefaultValue string `json:"defaultValue"`
-	label        string
+	Field   string
+	Type    string
+	Null    string
+	Key     string
+	Default string
+	Extra   string
 }
 
 func main() {
