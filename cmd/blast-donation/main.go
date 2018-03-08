@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -24,6 +26,20 @@ type Fields struct {
 	Result          string
 	Amount          string
 }
+
+//Stats contains an email blast and some statistic donations.
+type Stats struct {
+	EmailBlastKey string `json:"email_blast_KEY"`
+	Subject       string
+	Count         int
+	Min           float64
+	Max           float64
+	Sum           float64
+	Avg           float64
+}
+
+//FieldMap is a mpa of email blast keys and some donation stats.
+type FieldMap map[string]*Stats
 
 //All reads all of the records and sends them to a Fields channel.
 //parses the buffer for records then outputs them to cout.
@@ -56,17 +72,26 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 }
 
 //Use reads Fields records from a channel and displays them.
-func Use(cin chan Fields, b *bytes.Buffer) {
+func Use(cin chan Fields, stats FieldMap) {
 	for r := range cin {
 		log.Printf("Use: %+v\n", r)
-		r := []string{
-			r.EmailBlastKey,
-			r.Subject,
-			r.TransactionDate,
-			r.TransactionType,
-			r.Result,
-			r.Amount}
-		fmt.Fprintln(b, strings.Join(r, "\t"))
+		v, _ := strconv.ParseFloat(r.Amount, 64)
+		_, ok := stats[r.EmailBlastKey]
+		if !ok {
+			s := Stats{EmailBlastKey: r.EmailBlastKey, Subject: r.Subject}
+			stats[r.EmailBlastKey] = &s
+		}
+		x, _ := stats[r.EmailBlastKey]
+		x.Count = x.Count + 1
+		if x.Min == 0.0 {
+			x.Min = v
+		} else {
+			x.Min = math.Min(x.Min, v)
+		}
+		x.Max = math.Max(x.Max, v)
+		x.Sum = x.Sum + v
+		x.Avg = x.Sum / float64(x.Count)
+		log.Printf("stats: %+v\n", stats[r.EmailBlastKey])
 	}
 }
 
@@ -109,6 +134,8 @@ func main() {
 
 	results := ""
 	buf := bytes.NewBufferString(results)
+
+	stats := make(FieldMap)
 	tableName := strings.Join(clauses, "")
 	t := a.NewTable(tableName)
 
@@ -119,7 +146,7 @@ func main() {
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		Use(c, buf)
+		Use(c, stats)
 	}(&wg)
 	log.Println("Main: Use started")
 	wg.Add(1)
@@ -135,6 +162,10 @@ func main() {
 	log.Println("Main: waiting...")
 	wg.Wait()
 
+	fmt.Fprintf(buf, "EmailBlastKey\tSubject\tCount\tMin\tMax\tAvg\tSum\n")
+	for _, x := range stats {
+		fmt.Fprintf(buf, "%v\t%v\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n", x.EmailBlastKey, x.Subject, x.Count, x.Min, x.Max, x.Avg, x.Sum)
+	}
 	err = ioutil.WriteFile("results.tsv", buf.Bytes(), 0666)
 
 	log.Println("Main: done, results in results.tsv")
