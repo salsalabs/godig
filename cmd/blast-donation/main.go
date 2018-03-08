@@ -2,6 +2,9 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"strings"
 	"sync"
@@ -17,7 +20,7 @@ type Fields struct {
 	Subject         string
 	DonationKEY     string `json:"donation_KEY"`
 	TransactionDate string `json:"Transaction_Date"`
-	TramsactionType string `json:"Transaction_Type"`
+	TransactionType string `json:"Transaction_Type"`
 	Result          string
 	Amount          string
 }
@@ -53,9 +56,17 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 }
 
 //Use reads Fields records from a channel and displays them.
-func Use(cin chan Fields) {
+func Use(cin chan Fields, b *bytes.Buffer) {
 	for r := range cin {
 		log.Printf("Use: %+v\n", r)
+		r := []string{
+			r.EmailBlastKey,
+			r.Subject,
+			r.TransactionDate,
+			r.TransactionType,
+			r.Result,
+			r.Amount}
+		fmt.Fprintln(b, strings.Join(r, "\t"))
 	}
 }
 
@@ -96,6 +107,8 @@ func main() {
 		"donation"}
 	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast"
 
+	results := ""
+	buf := bytes.NewBufferString(results)
 	tableName := strings.Join(clauses, "")
 	t := a.NewTable(tableName)
 
@@ -106,7 +119,7 @@ func main() {
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		Use(c)
+		Use(c, buf)
 	}(&wg)
 	log.Println("Main: Use started")
 	wg.Add(1)
@@ -121,5 +134,8 @@ func main() {
 
 	log.Println("Main: waiting...")
 	wg.Wait()
-	log.Println("Main: done")
+
+	err = ioutil.WriteFile("results.tsv", buf.Bytes(), 0666)
+
+	log.Println("Main: done, results in results.tsv")
 }
