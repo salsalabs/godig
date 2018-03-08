@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -20,6 +21,7 @@ type Fields struct {
 	Tag             string
 	EmailBlastKey   string `json:"email_blast_KEY"`
 	Subject         string
+	DateCreated     string `json:"Date_Created"`
 	DonationKEY     string `json:"donation_KEY"`
 	TransactionDate string `json:"Transaction_Date"`
 	TransactionType string `json:"Transaction_Type"`
@@ -31,6 +33,7 @@ type Fields struct {
 type Stats struct {
 	EmailBlastKey string `json:"email_blast_KEY"`
 	Subject       string
+	DateCreated   string
 	Count         int
 	Min           float64
 	Max           float64
@@ -74,11 +77,13 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 //Use reads Fields records from a channel and displays them.
 func Use(cin chan Fields, stats FieldMap) {
 	for r := range cin {
-		log.Printf("Use: %+v\n", r)
 		v, _ := strconv.ParseFloat(r.Amount, 64)
 		_, ok := stats[r.EmailBlastKey]
 		if !ok {
 			s := Stats{EmailBlastKey: r.EmailBlastKey, Subject: r.Subject}
+			const form = "Mon Jan 02 2006 15:04:05 GMT-0700 (MST)"
+			t, _ := time.Parse(form, r.DateCreated)
+			s.DateCreated = t.Format("2006-01-02")
 			stats[r.EmailBlastKey] = &s
 		}
 		x, _ := stats[r.EmailBlastKey]
@@ -91,7 +96,6 @@ func Use(cin chan Fields, stats FieldMap) {
 		x.Max = math.Max(x.Max, v)
 		x.Sum = x.Sum + v
 		x.Avg = x.Sum / float64(x.Count)
-		log.Printf("stats: %+v\n", stats[r.EmailBlastKey])
 	}
 }
 
@@ -162,9 +166,9 @@ func main() {
 	log.Println("Main: waiting...")
 	wg.Wait()
 
-	fmt.Fprintf(buf, "EmailBlastKey\tSubject\tCount\tMin\tMax\tAvg\tSum\n")
+	fmt.Fprintf(buf, "EmailBlastKey\tSubject\tDate\tCount\tMin\tMax\tAvg\tSum\n")
 	for _, x := range stats {
-		fmt.Fprintf(buf, "%v\t%v\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n", x.EmailBlastKey, x.Subject, x.Count, x.Min, x.Max, x.Avg, x.Sum)
+		fmt.Fprintf(buf, "%v\t%v\t%v\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n", x.EmailBlastKey, x.Subject, x.DateCreated, x.Count, x.Min, x.Max, x.Avg, x.Sum)
 	}
 	err = ioutil.WriteFile("results.tsv", buf.Bytes(), 0666)
 
