@@ -69,3 +69,8 @@ func (a *API) Supporter() Table {
 func (a *API) SupporterGroups() Table {
 	return a.NewTable("supporter_groups")
 }
+
+//Publish is a shortcut for creating a publish Table.
+func (a *API) Publish() Table {
+	return a.NewTable("publish")
+}
