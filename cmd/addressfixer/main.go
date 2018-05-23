@@ -49,5 +49,5 @@ type Fixer interface {
 //Finisher accepts a supporter record at the end of the processing chain.
 //This could be saving the record to disk.  It could also be a sink.
 type Finisher interface {
-	Finish(c1 chan Supporter)
+	Finish(t *godig.Table, c1 chan Supporter)
 }

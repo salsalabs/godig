@@ -32,7 +32,7 @@ func All(t *godig.Table, crit string, c chan []addressfixer.Supporter) {
 		count = len(a)
 		if count == 0 {
 			log.Printf("All: %v offset %6d, done\n", t.Name, offset)
-			//close(c)
+			close(c)
 		} else {
 			c <- a
 			offset = offset + count
@@ -91,9 +91,9 @@ func main() {
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		if *live {
-			active.Finish(c3)
+			active.Finish(&t, c3)
 		} else {
-			passive.Finish(c3)
+			passive.Finish(&t, c3)
 		}
 	}(&wg)
 	log.Println("Main: Finish started")

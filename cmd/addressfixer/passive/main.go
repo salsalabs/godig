@@ -3,6 +3,7 @@ package passive
 import (
 	"log"
 
+	"github.com/salsalabs/godig"
 	"github.com/salsalabs/godig/cmd/addressfixer"
 )
 
@@ -24,7 +25,7 @@ func Fix(c1 chan addressfixer.Supporter, c2 chan addressfixer.Supporter, c3 chan
 
 //Finish accepts a supporter record at the end of the processing chain
 //and does nothing.
-func Finish(c chan addressfixer.Supporter) {
+func Finish(t *godig.Table, c chan addressfixer.Supporter) {
 	for s := range c {
 		log.Printf("Passive Save: %+v\n", s)
 	}
