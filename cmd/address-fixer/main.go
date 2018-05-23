@@ -1,5 +1,7 @@
 package addressfixer
 
+import "github.com/salsalabs/godig"
+
 //Supporter defines the parts of the supporter record that this app uses.
 type Supporter struct {
 	Key     string `json:"supporter_KEY"`
@@ -20,10 +22,16 @@ type Mod struct {
 	New   string
 }
 
+//Reader retrieves supporter records in batches and sends them
+//down the process stream.
+type Reader interface {
+	All(t *godig.Table, c chan []byte)
+}
+
 //Splitter accepts a buffer and splits it into supporter records.
 //Supporter records then flow through the channel.
 type Splitter interface {
-	Split(b []byte, c chan Supporter)
+	Split(c1 chan []byte, c2 chan Supporter)
 }
 
 //Auditor record changes to a supporter record.
