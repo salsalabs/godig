@@ -18,6 +18,14 @@ type Fields struct {
 	DateCreated      string `json:"Date_Created"`
 }
 
+//Results are returned from a delete call.
+type Results struct {
+	Object   string
+	Key      string
+	Result   string
+	Messages []string
+}
+
 func main() {
 	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	dtk := kingpin.Flag("database_table_KEY", "database table key").PlaceHolder("DTK").Required().String()
@@ -42,9 +50,13 @@ func main() {
 	}
 	f := b[0]
 	log.Printf("Match found, %+v\n", f)
-	_, err = t.Delete(f.PublishKey)
+	var r Results
+	err = t.Delete(f.PublishKey, &r)
 	if err != nil {
 		log.Fatalf("Delete error %v\n", err)
 	}
-	log.Printf("Delete successful\n")
+	if r.Result != "success" {
+		log.Fatalf("Delete error, %v\n", r.Messages)
+	}
+	log.Printf("Delete results: %+v\n", r)
 }

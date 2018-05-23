@@ -60,14 +60,17 @@ func Credentials(cpath string) (CredData, error) {
 }
 
 //Delete does a Salsa API /delete.  The caller provides a key. We whack that record.
-func (t *Table) Delete(key string) ([]byte, error) {
+func (t *Table) Delete(key string, target interface{}) error {
 	u := "https://%s/delete?json=true&object=%s&key=%s"
 	x := fmt.Sprintf(u, t.Host, t.Name, key)
 	resp, body, err := t.Get(x)
-	if resp.StatusCode != 200 {
-		return body, errors.New(resp.Status)
+	if err == nil {
+		if resp.StatusCode != 200 {
+			return errors.New(resp.Status)
+		}
+		err = json.Unmarshal(body, target)
 	}
-	return body, err
+	return err
 }
 
 //Describe shows returns the table structure as an array of field descriptors.
