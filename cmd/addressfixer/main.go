@@ -7,7 +7,7 @@ type Supporter struct {
 	Key     string `json:"supporter_KEY"`
 	Email   string
 	Street  string
-	Street2 string
+	Street2 string `json:"Street_2"`
 	City    string
 	State   string
 	Zip     string
@@ -46,6 +46,6 @@ type Fixer interface {
 
 //Saver accepts a supporter record at the end of the processing chain.
 //This could be saving the record to disk.  It could also be a sink.
-type Saver interface {
+type Finisher interface {
 	Save(c1 chan Supporter)
 }
