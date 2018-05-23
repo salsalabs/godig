@@ -14,7 +14,7 @@ type Fields struct {
 	Nullable     string
 	Type         string
 	DefaultValue string `json:"defaultValue"`
-	label        string
+	Label        string
 }
 
 func main() {

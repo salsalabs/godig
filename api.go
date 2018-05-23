@@ -75,7 +75,7 @@ func (t *Table) Delete(key string, target interface{}) error {
 
 //Describe shows returns the table structure as an array of field descriptors.
 func (t *Table) Describe(target interface{}) error {
-	p := "https://%s/api/describe.sjs?json&object=%s"
+	p := "https://%s/api/describe2.sjs?json&object=%s"
 	x := fmt.Sprintf(p, t.Host, t.Name)
 	_, body, err := t.Get(x)
 	if err == nil {
