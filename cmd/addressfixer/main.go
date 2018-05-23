@@ -1,6 +1,8 @@
 package addressfixer
 
-import "github.com/salsalabs/godig"
+import (
+	"github.com/salsalabs/godig"
+)
 
 //Supporter defines the parts of the supporter record that this app uses.
 type Supporter struct {
@@ -25,13 +27,13 @@ type Mod struct {
 //Reader retrieves supporter records in batches and sends them
 //down the process stream.
 type Reader interface {
-	All(t *godig.Table, c chan []byte)
+	All(t *godig.Table, c chan []Supporter)
 }
 
 //Splitter accepts a buffer and splits it into supporter records.
 //Supporter records then flow through the channel.
 type Splitter interface {
-	Split(c1 chan []byte, c2 chan Supporter)
+	Split(c1 chan []Supporter, c2 chan Supporter)
 }
 
 //Auditor record changes to a supporter record.
@@ -44,8 +46,8 @@ type Fixer interface {
 	Fix(c1 chan Supporter, c2 chan Supporter, c3 chan Mod)
 }
 
-//Saver accepts a supporter record at the end of the processing chain.
+//Finisher accepts a supporter record at the end of the processing chain.
 //This could be saving the record to disk.  It could also be a sink.
 type Finisher interface {
-	Save(c1 chan Supporter)
+	Finish(c1 chan Supporter)
 }
