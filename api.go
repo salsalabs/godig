@@ -168,6 +168,21 @@ func (t *Table) One(key string, target interface{}) error {
 	return err
 }
 
+//OneRaw retrieves a single record using the provided primary key.
+//Returns the buffer retrieved from the URL.
+func (t *Table) OneRaw(key string) ([]byte, error) {
+	p := "https://%s/api/getObject.sjs?json&object=%s&key=%s"
+	x := fmt.Sprintf(p, t.Host, t.Name, key)
+
+	resp, body, err := t.Get(x)
+	if err == nil {
+		if resp.StatusCode != 200 {
+			return body, errors.New(resp.Status)
+		}
+	}
+	return body, err
+}
+
 //Save does a Salsa API /save.  The caller provides a buffer of fields to
 //change.  That will go into the body of a POST request.  The buffer can
 //be inordinately long.  Salsa may not process a truly long buffer.  YMWV.
