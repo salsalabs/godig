@@ -136,6 +136,15 @@ func (t *Table) LeftJoin(offset int, count int, crit string, target interface{})
 // smaller.  End of data is when number of records is zero. The target is populated
 // with an array of records.  An empty target means that no more data is available.
 func (t *Table) Many(offset int, count int, crit string, target interface{}) error {
+	body, err := t.ManyRaw(offset, count, crit)
+	if err == nil {
+		err = json.Unmarshal(body, &target)
+	}
+	return err
+}
+
+//ManyRaw reads many records via the API and returns a buffer.
+func (t *Table) ManyRaw(offset int, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
 	if len(crit) != 0 {
@@ -143,11 +152,7 @@ func (t *Table) Many(offset int, count int, crit string, target interface{}) err
 	}
 	// fmt.Printf("Many reading %v\n", x)
 	_, body, err := t.Get(x)
-	// fmt.Printf("Many retrieved body %v\n", string(body))
-	if err == nil {
-		err = json.Unmarshal(body, &target)
-	}
-	return err
+	return body, err
 }
 
 //One retrieves a single record using the provided primary key.  The "target"
@@ -159,9 +164,7 @@ func (t *Table) Many(offset int, count int, crit string, target interface{}) err
 //
 //TBD Determine how to retrieve all fields from a record.
 func (t *Table) One(key string, target interface{}) error {
-	p := "https://%s/api/getObject.sjs?json&object=%s&key=%s"
-	x := fmt.Sprintf(p, t.Host, t.Name, key)
-	_, body, err := t.Get(x)
+	body, err := t.OneRaw(key)
 	if err == nil {
 		err = json.Unmarshal(body, target)
 	}
