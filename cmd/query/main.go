@@ -3,6 +3,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -22,5 +23,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Query error %v\n", err)
 	}
-	log.Printf("%v\n", string(b))
+	s := strings.Replace(string(b), ",", ",\n", -1)
+	log.Printf("%v\n", s)
 }
