@@ -1,4 +1,4 @@
-package addressFixer
+package addressfixer
 
 //Supporter defines the parts of the supporter record that this app uses.
 type Supporter struct {
@@ -23,7 +23,7 @@ type Mod struct {
 //Splitter accepts a buffer and splits it into supporter records.
 //Supporter records then flow through the channel.
 type Splitter interface {
-	Split(b []buf, c chan Supporter)
+	Split(b []byte, c chan Supporter)
 }
 
 //Auditor record changes to a supporter record.
