@@ -11,8 +11,8 @@ import (
 //Finish accepts supporter records at the end of the processing chain.
 //The records are written back to the server.
 func Finish(t *godig.Table, c chan []Supporter, live bool) {
-	var count int32
-	count = 0
+	var offset int32
+	offset = 0
 	for a := range c {
 		b := bytes.NewBufferString("")
 		for _, s := range a {
@@ -35,8 +35,8 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			}
 			//log.Printf("Finish: appended %d, %v\n", n, x)
 		}
-		log.Printf("Finish: offset %7d, saving %v\n", count, len(a))
-		count = count + int32(len(a))
+		log.Printf("Finish: offset %7d, saving %v\n", offset, len(a))
+		offset = offset + int32(len(a))
 		/*
 			if live {
 				body, err := t.SaveBulk(b.String())
@@ -48,5 +48,5 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			}
 		*/
 	}
-	log.Printf("Finish: offset %7d, done", count)
+	log.Printf("Finish: offset %7d, done", offset)
 }

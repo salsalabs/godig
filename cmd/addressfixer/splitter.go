@@ -6,8 +6,8 @@ import "log"
 //Supporter records then flow through the channel.
 func Split(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 	defer close(c2)
-	var count int32
-	count = 0
+	var offset int32
+	offset = 0
 	for a := range c1 {
 		log.Printf("Split: received %v\n", len(a))
 		for i := 0; i < len(a); i += chunkSize {
@@ -20,9 +20,9 @@ func Split(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 				b = append(b, a[k-i])
 			}
 			c2 <- b
-			count = count + int32(len(b))
-			log.Printf("Split: offset %7d, sent %v\n", count, len(b))
+			offset = offset + int32(len(b))
+			log.Printf("Split: offset %7d, sent %v\n", offset, len(b))
 		}
 	}
-	log.Printf("Split: done, %v records\n", count)
+	log.Printf("Split: done, %v records\n", offset)
 }

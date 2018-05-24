@@ -1,8 +1,14 @@
 package addressfixer
 
+import "log"
+
 //Audit record changes to a supporter record.
 func Audit(c chan Mod) {
+	var count int32
+	count = 0
 	for a := range c {
-		_ = a.Field
+		log.Printf("Audit: %+v\n", a)
+		count = count + 1
 	}
+	log.Printf("Audit: count %7d, done\n", count)
 }
