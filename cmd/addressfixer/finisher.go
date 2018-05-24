@@ -11,10 +11,12 @@ import (
 //Finish accepts supporter records at the end of the processing chain.
 //The records are written back to the server.
 func Finish(t *godig.Table, c chan []Supporter, live bool) {
+	var count int32
+	count = 0
 	for a := range c {
 		b := bytes.NewBufferString("")
 		for _, s := range a {
-			log.Printf("Finish: %+v\n", s)
+			// log.Printf("Finish: %+v\n", s)
 			p := []string{
 				"",
 				"object=supporter",
@@ -27,20 +29,23 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 				"Country=" + s.Country}
 			x := strings.Join(p, "&")
 			x = strings.Replace(x, " ", "%20", -1)
-			n, err := b.WriteString(x)
+			_, err := b.WriteString(x)
 			if err != nil {
 				panic(err)
 			}
-			log.Printf("Finish: appended %d, %v\n", n, x)
+			//log.Printf("Finish: appended %d, %v\n", n, x)
 		}
-		log.Printf("Finish: saving %s\n", b.String())
-		if live {
-			body, err := t.SaveBulk(b.String())
-			if err != nil {
-				panic(err)
+		log.Printf("Finish: saving %v at offset %v\n", len(a), count)
+		count = count + int32(len(a))
+		/*
+			if live {
+				body, err := t.SaveBulk(b.String())
+				if err != nil {
+					panic(err)
+				}
+				log.Printf("Finish: saved %v\n", len(a))
+				log.Printf("Finish: /save returned %v\n", string(body))
 			}
-			log.Printf("Finish: saved %v\n", len(a))
-			log.Printf("Finish: /save returned %v\n", string(body))
-		}
+		*/
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"gopkg.in/yaml.v2"
@@ -210,7 +209,7 @@ func (t *Table) SaveBulk(s string) ([]byte, error) {
 	w := bytes.NewBufferString("?json")
 	_, _ = w.WriteString(s)
 	b := bytes.NewReader(w.Bytes())
-	log.Printf("SaveBulk: writing %s\n", w.String())
+	//log.Printf("SaveBulk: writing %s\n", w.String())
 	req, err := http.NewRequest("POST", x, b)
 	if err != nil {
 		return nil, err

@@ -17,7 +17,7 @@ func Split(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 			for k := i; k < j; k++ {
 				b = append(b, a[k-i])
 			}
-			log.Printf("%d: %v\n", i, b)
+			log.Printf("Split: sent %v supporters\n", len(b))
 			c2 <- b
 		}
 	}
