@@ -16,19 +16,24 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 
 		for _, r := range a {
 			var mods []Mod
-			err := Zippo(r, mods)
+			// Get country code for long country name.
+			// Do this before jumping into the postal code lookup.
+			mods, err := RestCountries(r, mods)
 			if err != nil {
-				log.Printf("Fix:     %v on %v\n", err, r.Zip)
+				log.Printf("Fix:    %v", err)
 			} else {
-				if len(mods) != 0 {
-					log.Printf("Fix:     Zippo returned %v mods for %v\n", len(mods), r.Zip)
-					for _, m := range mods {
-						c3 <- m
-						log.Printf("send %+v to Audit\n", m)
-					}
-					t = append(t, r)
+				mods, err := Zippo(r, mods)
+				if err != nil {
+					log.Printf("Fix:     %v\n", err)
 				} else {
-					skipped = skipped + 1
+					if len(mods) != 0 {
+						for _, m := range mods {
+							c3 <- m
+						}
+						t = append(t, r)
+					} else {
+						skipped = skipped + 1
+					}
 				}
 			}
 		}
@@ -41,5 +46,5 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 		totalSkipped = totalSkipped + skipped
 		offset = offset + int32(len(a))
 	}
-	log.Printf("Fix:     done, %v records in, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
+	//log.Printf("Fix:     done, %v records in, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
 }

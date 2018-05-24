@@ -1,7 +1,5 @@
 package addressfixer
 
-import "log"
-
 //Chunk accepts a buffer and splits it into supporter records.
 //Supporter records then flow through the channel.
 func Chunk(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
@@ -21,7 +19,7 @@ func Chunk(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 			c2 <- b
 			offset = offset + int32(len(b))
 		}
-		log.Printf("Chunk:   offset %7d, sent %v\n", offset, len(a))
+		//log.Printf("Chunk:   offset %7d, sent %v\n", offset, len(a))
 	}
-	log.Printf("Chunk:   done, %v records\n", offset)
+	//log.Printf("Chunk:   done, %v records\n", offset)
 }

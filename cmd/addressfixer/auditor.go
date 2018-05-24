@@ -7,7 +7,10 @@ func Audit(c chan Mod) {
 	var count int32
 	count = 0
 	for a := range c {
-		log.Printf("Audit:   %+v\n", a)
+		if len(a.Old) == 0 {
+			a.Old = "(empty)"
+		}
+		log.Printf("Audit:   Key: %-8s Field: %-10s  Old: %-10s  New: %-10s \n", a.Key, a.Field, a.Old, a.New)
 		count = count + 1
 	}
 	log.Printf("Audit:   done, %d records\n", count)

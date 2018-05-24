@@ -32,7 +32,7 @@ type ZResult struct {
 //that other countries also use five numeric digits for postal codes.
 //We are ignoring the ambiguity for the time being.
 func isCA(z string) bool {
-	p := `^\d{5}(?:[-\s]\d{4})?$`
+	p := `^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`
 	m := regexp.MustCompile(p).MatchString(z)
 	return m
 }
@@ -59,9 +59,9 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Old:   s.State,
 			New:   x.Abbr}
 		r = append(r, m)
-		log.Printf("Zippo:   Key %7s changed State from '%v' to '%v'\n", s.Key, s.State, x.Abbr)
 		s.State = x.Abbr
 	}
+
 	return r
 }
 
@@ -76,7 +76,6 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 			Old:   s.Country,
 			New:   t.CountryCode}
 		r = append(r, m)
-		log.Printf("Zippo:   Key %7s changed Country from '%v' to '%v'\n", s.Key, s.Country, t.CountryCode)
 		s.Country = t.CountryCode
 	}
 	return r
@@ -84,13 +83,18 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 
 //Fetch retrieves information for a zip code.
 func Fetch(s Supporter, c string) (ZResult, error) {
-	u := fmt.Sprintf("http://api.zippopotam.us/%v/%v", c, s.Zip)
+	// Zippopotamus only needs the first three digits for Canada.
+	p := s.Zip
+	if c == "CA" {
+		p = p[0:3]
+	}
+	u := fmt.Sprintf("http://api.zippopotam.us/%v/%v", c, p)
 	//log.Printf("Zippo:   Reading %v\n", u)
 	var body []byte
 	var zr ZResult
 	resp, err := http.Get(u)
 	if resp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP error %v on %v", resp.StatusCode, u)
+		err = fmt.Errorf("Key: %-8s HTTP error %v on %v", s.Key, resp.Status, u)
 	}
 	if err != nil {
 		return zr, err
@@ -114,25 +118,24 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 
 //Zippo does a lookup using the free service from http://www.zippopotam.us/.
 //Note that ambiguous results from Zippopotamus are not applied.
-func Zippo(s Supporter, r []Mod) error {
+func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 	if len(s.Zip) == 0 {
-		return nil
+		return r, nil
 	}
 	country := "US"
 	if !isUS(s.Zip) {
 		if isCA(s.Zip) {
 			country = "CA"
 		} else {
-			log.Printf("Zippo:   %v, unknown country\n", s.Zip)
-			return nil
+			log.Printf("Zippo:   Key: %-8s Zip: %-9s Comment: unknown country\n", s.Key, s.Zip)
+			return r, nil
 		}
 	}
 	zr, err := Fetch(s, country)
 	if err != nil {
-		return err
+		return r, err
 	}
 	r = State(s, zr, r)
 	r = Country(s, zr, r)
-
-	return err
+	return r, err
 }

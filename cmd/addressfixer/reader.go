@@ -20,7 +20,6 @@ func ReadAll(t *godig.Table, crit string, c chan []Supporter) {
 		err := t.Many(offset, count, crit, &a)
 		if err != nil {
 			log.Fatalf("ReadAll: %v offset %6d %v\n", t.Name, offset, err)
-			return
 		}
 		count = len(a)
 		if count == 0 {
@@ -28,7 +27,7 @@ func ReadAll(t *godig.Table, crit string, c chan []Supporter) {
 			close(c)
 		} else {
 			c <- a
-			log.Printf("ReadAll: offset %7d, sent %v\n", offset, len(a))
+			//log.Printf("ReadAll: offset %7d, sent %v\n", offset, len(a))
 			offset = offset + count
 		}
 	}
