@@ -6,8 +6,6 @@ import (
 
 	"github.com/salsalabs/godig"
 	"github.com/salsalabs/godig/cmd/addressfixer"
-	"github.com/salsalabs/godig/cmd/addressfixer/active"
-	"github.com/salsalabs/godig/cmd/addressfixer/passive"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -16,6 +14,7 @@ import (
 func main() {
 	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
+	chunkSize := kingpin.Flag("chunk-size", "Records per chunk").Default("50").Int()
 	live := kingpin.Flag("live", "Update the database.  USE EXTREME CAUTION!!!").PlaceHolder("LIVE").Default("false").Bool()
 	kingpin.Parse()
 
@@ -26,8 +25,8 @@ func main() {
 	t := a.Supporter()
 
 	c1 := make(chan []addressfixer.Supporter, 100)
-	c2 := make(chan addressfixer.Supporter, 100)
-	c3 := make(chan addressfixer.Supporter, 100)
+	c2 := make(chan []addressfixer.Supporter, 100)
+	c3 := make(chan []addressfixer.Supporter, 100)
 	c4 := make(chan addressfixer.Mod, 100)
 	var wg sync.WaitGroup
 
@@ -43,11 +42,7 @@ func main() {
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		if *live {
-			active.Finish(&t, c3)
-		} else {
-			passive.Finish(&t, c3)
-		}
+		addressfixer.Finish(&t, c3, *live)
 	}(&wg)
 	log.Println("Main: Finish started")
 
@@ -61,7 +56,7 @@ func main() {
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		addressfixer.Split(c1, c2)
+		addressfixer.Split(c1, c2, *chunkSize)
 	}(&wg)
 	log.Println("Main: Fix started")
 

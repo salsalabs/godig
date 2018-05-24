@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"gopkg.in/yaml.v2"
@@ -189,22 +190,44 @@ func (t *Table) OneRaw(key string) ([]byte, error) {
 //Save does a Salsa API /save.  The caller provides a buffer of fields to
 //change.  That will go into the body of a POST request.  The buffer can
 //be inordinately long.  Salsa may not process a truly long buffer.  YMWV.
-func (t *Table) Save(key string, s string) error {
+func (t *Table) Save(key string, s string) ([]byte, error) {
+	p := fmt.Sprintf("&object=%s&key=%s&%s", t.Name, key, s)
+	return t.SaveBulk(p)
+}
+
+//SaveBulk does a Salsa API /save.  The caller provides the contents
+// of the body for a POST.  In general, the contents can be characterized
+// as
+// "&object=" followed by the table name,
+// "&key=" followed by zero or the primary key
+// and multiple instances of
+// "&FieldName=Value"
+// SaveBulk returns the body of the response and an error
+func (t *Table) SaveBulk(s string) ([]byte, error) {
 	u := "https://%s/save"
 	x := fmt.Sprintf(u, t.Host)
-	p := fmt.Sprintf("json=true&object=%s&key=%s&%s", t.Name, key, s)
-	b := bytes.NewReader([]byte(p))
+
+	w := bytes.NewBufferString("?json")
+	_, _ = w.WriteString(s)
+	b := bytes.NewReader(w.Bytes())
+	log.Printf("SaveBulk: writing %s\n", w.String())
 	req, err := http.NewRequest("POST", x, b)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Salsa's API needs these cookies to verify authentication.
 	for _, c := range t.Cookies {
 		req.AddCookie(c)
 	}
 	// TODO: figure out what to do with the an error response from /save.
-	_, err = t.Client.Do(req)
-	return nil
+	resp, err := t.Client.Do(req)
+	var body []byte
+	if err == nil {
+		defer resp.Body.Close()
+		body, err = ioutil.ReadAll(resp.Body)
+	}
+
+	return body, nil
 }
 
 //YAMLAuth accepts campaign manager credentials (email, password, host)
