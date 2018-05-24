@@ -18,12 +18,11 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 
 		for _, r := range a {
 			var mods []Mod
-			err := Zippo(s, mods)
+			err := Zippo(r, mods)
 			if err != nil {
-				log.Printf("Fix:     %v on %v\n", err, s.Zip)
-				skip = true
+				log.Printf("Fix:     %v on %v\n", err, r.Zip)
 			} else {
-				log.Printf("Fix:     Zippo returned %v mods\n", len(mods))
+				log.Printf("Fix:     Zippo returned %v mods for %v\n", len(mods), r.Zip)
 				if len(mods) != 0 {
 					for _, m := range mods {
 						c3 <- m
