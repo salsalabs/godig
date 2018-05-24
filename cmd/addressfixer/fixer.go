@@ -55,7 +55,7 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 		totalSkipped = totalSkipped + skipped
 		offset = offset + int32(len(a))
 	}
-	log.Printf("Fix:     done, %v records, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
+	log.Printf("Fix:     done, %v records in, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
 }
 
 /*
