@@ -5,8 +5,6 @@ import "log"
 //Fix updates a supporter record using SmartyStreets.
 //See https://smartystreets.com/docs/sdk/go
 func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
-	defer close(c2)
-	defer close(c3)
 	var offset int32
 	offset = 0
 	totalSkipped := 0

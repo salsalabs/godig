@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 //Place is returned by Zippopotamus for a match with the zipcode.
@@ -40,12 +41,14 @@ func isCA(z string) bool {
 //that other countries also use five numeric digits for postal codes.
 //We are ignoring the ambiguity for the time being.
 func isUS(z string) bool {
+	// Add check against phone number
+	// Add check for domain name
 	p := `^\d{5}(?:[-\s]\d{4})?$`
 	m := regexp.MustCompile(p).MatchString(z)
 	return m
 }
 
-//state checks to see if the supporter's state is correct.  If not, then
+//State checks to see if the supporter's state is correct.  If not, then
 //the record is changed and a Mod is added to the list of modifications.
 func State(s Supporter, t ZResult, r []Mod) []Mod {
 	x := t.Places[0]
@@ -56,22 +59,25 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Old:   s.State,
 			New:   x.Abbr}
 		r = append(r, m)
+		log.Printf("Zippo:   Key %7s changed State from '%v' to '%v'\n", s.Key, s.State, x.Abbr)
 		s.State = x.Abbr
 	}
 	return r
 }
 
-//state checks to see if the supporter's state is correct.  If not, then
+//Country checks to see if the supporter's state is correct.  If not, then
 //the record is changed and a Mod is added to the list of modifications.
 func Country(s Supporter, t ZResult, r []Mod) []Mod {
-	if s.Country != t.CountryCode {
+	s.Country = strings.TrimSpace(s.Country)
+	if len(s.Country) != 0 && s.Country != t.CountryCode {
 		m := Mod{
 			Key:   s.Key,
 			Field: "Country",
 			Old:   s.Country,
 			New:   t.CountryCode}
 		r = append(r, m)
-		s.State = t.CountryCode
+		log.Printf("Zippo:   Key %7s changed Country from '%v' to '%v'\n", s.Key, s.Country, t.CountryCode)
+		s.Country = t.CountryCode
 	}
 	return r
 }
@@ -100,7 +106,7 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	}
 	//log.Printf("Zippo:   Result is %+v\n", zr)
 	if len(zr.Places) == 0 {
-		err = fmt.Errorf("Zippo:   No results for %v\n", s.Zip)
+		err = fmt.Errorf("no results for %v", s.Zip)
 		return zr, err
 	}
 	return zr, err
@@ -117,7 +123,7 @@ func Zippo(s Supporter, r []Mod) error {
 		if isCA(s.Zip) {
 			country = "CA"
 		} else {
-			log.Printf("Zippo:   Zip %v, is not US or CA\n", s.Zip)
+			log.Printf("Zippo:   %v, unknown country\n", s.Zip)
 			return nil
 		}
 	}

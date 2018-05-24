@@ -30,10 +30,10 @@ type Reader interface {
 	All(t *godig.Table, c chan []Supporter)
 }
 
-//Splitter accepts a buffer and splits it into supporter records.
+//Chunkter accepts a buffer and splits it into supporter records.
 //Supporter records then flow through the channel.
-type Splitter interface {
-	Split(c1 chan []Supporter, c2 chan Supporter)
+type Chunkter interface {
+	Chunk(c1 chan []Supporter, c2 chan Supporter)
 }
 
 //Auditor record changes to a supporter record.
