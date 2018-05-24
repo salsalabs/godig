@@ -35,7 +35,7 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			}
 			//log.Printf("Finish: appended %d, %v\n", n, x)
 		}
-		log.Printf("Finish: saving %v at offset %v\n", len(a), count)
+		log.Printf("Finish: offset %7d, saving %v\n", count, len(a))
 		count = count + int32(len(a))
 		/*
 			if live {
@@ -48,4 +48,5 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			}
 		*/
 	}
+	log.Printf("Finish: offset %7d, done", count)
 }
