@@ -19,9 +19,12 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 	defer close(c3)
 	var offset int32
 	offset = 0
+	totalSkipped := 0
+	totalSent := 0
 	for a := range c1 {
 		var t []Supporter
 		skipped := 0
+		sent := 0
 
 		for _, r := range a {
 			m := false
@@ -45,13 +48,14 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 		}
 		if len(t) != 0 {
 			c2 <- t
-			log.Printf("Fix: offset %7d, skipped %v, sent %v", offset, skipped, len(t))
-		} else {
-			log.Printf("Fix: offset %7d, skipped %v\n", offset, skipped)
+			sent = sent + len(t)
 		}
+		//log.Printf("Fix:     offset %7d, skipped %v, sent %v", offset, skipped, sent)
+		totalSent = totalSent + sent
+		totalSkipped = totalSkipped + skipped
 		offset = offset + int32(len(a))
 	}
-	log.Printf("Fix: done, %v records\n", offset)
+	log.Printf("Fix:     done, %v records, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
 }
 
 /*

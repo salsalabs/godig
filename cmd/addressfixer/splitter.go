@@ -9,7 +9,7 @@ func Split(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 	var offset int32
 	offset = 0
 	for a := range c1 {
-		log.Printf("Split: received %v\n", len(a))
+		log.Printf("Split:   Offset %7d, received %v\n", offset, len(a))
 		for i := 0; i < len(a); i += chunkSize {
 			j := i + chunkSize
 			if j > len(a) {
@@ -17,12 +17,13 @@ func Split(c1 chan []Supporter, c2 chan []Supporter, chunkSize int) {
 			}
 			var b []Supporter
 			for k := i; k < j; k++ {
-				b = append(b, a[k-i])
+				b = append(b, a[k])
 			}
 			c2 <- b
 			offset = offset + int32(len(b))
-			log.Printf("Split: offset %7d, sent %v\n", offset, len(b))
+			// log.Printf("Split:   offset %7d, sent %v\n", offset, len(b))
 		}
+		log.Printf("Split:   offset %7d, sent %v\n", offset, len(a))
 	}
-	log.Printf("Split: done, %v records\n", offset)
+	log.Printf("Split:   done, %v records\n", offset)
 }

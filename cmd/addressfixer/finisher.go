@@ -33,20 +33,17 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			if err != nil {
 				panic(err)
 			}
-			//log.Printf("Finish: appended %d, %v\n", n, x)
 		}
-		log.Printf("Finish: offset %7d, saving %v\n", offset, len(a))
+		log.Printf("Finish:  offset %7d, saving %v\n", offset, len(a))
 		offset = offset + int32(len(a))
-		/*
-			if live {
-				body, err := t.SaveBulk(b.String())
-				if err != nil {
-					panic(err)
-				}
-				log.Printf("Finish: saved %v\n", len(a))
-				log.Printf("Finish: /save returned %v\n", string(body))
+		if live {
+			body, err := t.SaveBulk(b.String())
+			if err != nil {
+				panic(err)
 			}
-		*/
+			log.Printf("Finish:  saved %v\n", len(a))
+			log.Printf("Finish:  /save returned %v\n", string(body))
+		}
 	}
-	log.Printf("Finish: offset %7d, done", offset)
+	log.Printf("Finish:  done, count %v", offset)
 }

@@ -27,48 +27,48 @@ func main() {
 	c1 := make(chan []addressfixer.Supporter, 100)
 	c2 := make(chan []addressfixer.Supporter, 100)
 	c3 := make(chan []addressfixer.Supporter, 100)
-	c4 := make(chan addressfixer.Mod, 100)
+	c4 := make(chan addressfixer.Mod, 1000)
 	var wg sync.WaitGroup
 
-	log.Println("Main: start")
+	log.Println("Main:    start")
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.Audit(c4)
 	}(&wg)
-	log.Println("Main: Audit started")
+	log.Println("Main:    Audit started")
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.Finish(&t, c3, *live)
 	}(&wg)
-	log.Println("Main: Finish started")
+	log.Println("Main:    Finish started")
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.Fix(c2, c3, c4)
 	}(&wg)
-	log.Println("Main: Fix started")
+	log.Println("Main:    Fix started")
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.Split(c1, c2, *chunkSize)
 	}(&wg)
-	log.Println("Main: Fix started")
+	log.Println("Main:    Fix started")
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.ReadAll(&t, *crit, c1)
 	}(&wg)
-	log.Println("Main: All started")
+	log.Println("Main:    All started")
 
-	log.Println("Main: waiting...")
+	log.Println("Main:    waiting...")
 	wg.Wait()
-	log.Println("Main: done")
+	log.Println("Main:    done")
 
 }
