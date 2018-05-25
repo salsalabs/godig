@@ -67,15 +67,14 @@ func main() {
 	}(&wg)
 	log.Println("Main:    Finish started")
 
-	// Wrap this in a wait group so that we can close the channels
-	// when all of the fixers are done.
 	log.Printf("Main:    Starting %v fixer(s)\n", *fixerCount)
+	m := &sync.Mutex{}
 	for i := 1; i <= *fixerCount; i++ {
 		wg.Add(1)
 		log.Printf("Main:    Fix %v started\n", i)
 		go func(w *sync.WaitGroup) {
 			defer w.Done()
-			addressfixer.Fix(c2, c3, c4)
+			addressfixer.Fix(c2, c3, c4, m, i)
 		}(&wg)
 	}
 

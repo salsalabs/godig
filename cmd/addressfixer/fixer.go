@@ -1,15 +1,30 @@
 package addressfixer
 
 import "log"
+import "sync"
 
 //Fix updates a supporter record using SmartyStreets.
 //See https://smartystreets.com/docs/sdk/go
-func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
+
+func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod, m *sync.Mutex, id int) {
 	var offset int32
 	offset = 0
 	totalSkipped := 0
 	totalSent := 0
-	for a := range c1 {
+	ok := true
+
+	for ok {
+		m.Lock()
+		a, ok := <-c1
+		m.Unlock()
+
+		if !ok {
+			break
+			log.Printf("Fix:     id %2d donev\n", id)
+		}
+		firstKey := a[0].Key
+		log.Printf("Fix:     id %2d snagged the buffer starting with %v\n", id, firstKey)
+
 		var t []Supporter
 		skipped := 0
 		sent := 0
@@ -20,11 +35,11 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 			// Do this before jumping into the postal code lookup.
 			mods, err := RestCountries(&r, mods)
 			if err != nil {
-				log.Printf("Fix:    %v", err)
+				log.Printf("Fix:    id %2d %v", id, err)
 			} else {
 				mods, err := Zippo(r, mods)
 				if err != nil {
-					log.Printf("Fix:     %v\n", err)
+					log.Printf("Fix:     id %2d %v\n", id, err)
 				} else {
 					if len(mods) != 0 {
 						for _, m := range mods {
@@ -41,10 +56,10 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 			c2 <- t
 			sent = sent + len(t)
 		}
-		//log.Printf("Fix:     offset %7d, skipped %v, sent %v", offset, skipped, sent)
+		log.Printf("Fix:     id %2d offset %7d, skipped %v, sent %v", id, offset, skipped, sent)
 		totalSent = totalSent + sent
 		totalSkipped = totalSkipped + skipped
 		offset = offset + int32(len(a))
 	}
-	//log.Printf("Fix:     done, %v records in, sent %v, skipped %v\n", offset, totalSent, totalSkipped)
+	log.Printf("Fix:     id %2d done, %v records in, sent %v, skipped %v\n", id, offset, totalSent, totalSkipped)
 }
