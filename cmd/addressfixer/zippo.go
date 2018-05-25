@@ -51,6 +51,10 @@ func isUS(z string) bool {
 //the record is changed and a Mod is added to the list of modifications.
 func State(s Supporter, t ZResult, r []Mod) []Mod {
 	x := t.Places[0]
+	// Not a good result, don't use it.
+	if strings.Contains(x.Abbr, "Whistler") {
+		return r
+	}
 	if s.State != x.Abbr {
 		m := Mod{
 			Key:    s.Key,
@@ -89,6 +93,7 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	switch c {
 	case "CA":
 		//log.Printf("zippo:91 p is '%v' p has %d chars\n", p, len(p))
+		//Zippopotamus only needs the first three digits (FSA).
 		if len(p) > 2 {
 			p = p[0:3]
 		}
@@ -96,7 +101,16 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 		re := regexp.MustCompile(`^\w+\d+`)
 		p = re.FindString(p)
 	case "":
-		c = "US"
+		if isCA(p) {
+			c = "CA"
+			s.Country = "CA"
+			//Zippopotamus only needs the first three digits (FSA).
+			if len(p) > 2 {
+				p = p[0:3]
+			}
+		} else {
+			c = "US"
+		}
 	}
 	if c == "US" {
 		if len(s.Zip) == 4 {
