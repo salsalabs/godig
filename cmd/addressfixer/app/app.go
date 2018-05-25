@@ -109,7 +109,7 @@ func main() {
 	close(c2)
 	close(c3)
 	close(c4)
-	ciose(offset)
+	close(offset)
 	close(done)
 	log.Println("Main:    done")
 
