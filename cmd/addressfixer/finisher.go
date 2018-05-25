@@ -2,20 +2,33 @@ package addressfixer
 
 import (
 	"bytes"
+	"github.com/salsalabs/godig"
 	"log"
 	"strings"
-
-	"github.com/salsalabs/godig"
+	"sync"
 )
 
 //Finish accepts supporter records at the end of the processing chain.
 //The records are written back to the server.
-func Finish(t *godig.Table, c chan []Supporter, live bool) {
+func Finish(t *godig.Table, c1 chan []Supporter, live bool, m *sync.Mutex, id int) {
+	ok := true
 	var count int32
 	count = 0
-	for a := range c {
+
+	for ok {
+		m.Lock()
+		a, ok := <-c1
+		m.Unlock()
+
+		if !ok {
+			break
+		}
+
 		b := bytes.NewBufferString("")
 		for _, s := range a {
+			if len(s.State) == 0 {
+				log.Printf("Finish:  Key %7s, City: '%s' State: '%s' Zip: '%s' Country: '%s'\n", s.Key, s.City, s.State, s.Zip, s.Country)
+			}
 			// log.Printf("Finish: %+v\n", s)
 			p := []string{
 				"",
