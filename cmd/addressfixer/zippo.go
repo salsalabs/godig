@@ -54,10 +54,11 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 	x := t.Places[0]
 	if s.State != x.Abbr {
 		m := Mod{
-			Key:   s.Key,
-			Field: "State",
-			Old:   s.State,
-			New:   x.Abbr}
+			Key:    s.Key,
+			Field:  "State",
+			Old:    s.State,
+			New:    x.Abbr,
+			Reason: fmt.Sprintf("Z Lookup for %v in %v\n", s.Zip, s.Country)}
 		r = append(r, m)
 		s.State = x.Abbr
 	}
@@ -71,10 +72,11 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 	s.Country = strings.TrimSpace(s.Country)
 	if len(s.Country) != 0 && s.Country != t.CountryCode {
 		m := Mod{
-			Key:   s.Key,
-			Field: "Country",
-			Old:   s.Country,
-			New:   t.CountryCode}
+			Key:    s.Key,
+			Field:  "Country",
+			Old:    s.Country,
+			New:    t.CountryCode,
+			Reason: fmt.Sprintf("Z Lookup for %v in %v\n", s.Zip, s.Country)}
 		r = append(r, m)
 		s.Country = t.CountryCode
 	}
@@ -85,8 +87,12 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 func Fetch(s Supporter, c string) (ZResult, error) {
 	// Zippopotamus only needs the first three digits for Canada.
 	p := s.Zip
-	if c == "CA" {
+	switch c {
+	case "CA":
 		p = p[0:3]
+	case "GB":
+		re := regexp.MustCompile(`^\w+\d+`)
+		p = re.FindString(p)
 	}
 	u := fmt.Sprintf("http://api.zippopotam.us/%v/%v", c, p)
 	//log.Printf("Zippo:   Reading %v\n", u)
@@ -122,16 +128,18 @@ func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 	if len(s.Zip) == 0 {
 		return r, nil
 	}
-	country := "US"
-	if !isUS(s.Zip) {
-		if isCA(s.Zip) {
-			country = "CA"
-		} else {
-			log.Printf("Zippo:   Key: %-8s Zip: %-9s Comment: unknown country\n", s.Key, s.Zip)
-			return r, nil
+	/*	country := "US"
+		if !isUS(s.Zip) {
+			if isCA(s.Zip) {
+				country = "CA"
+			} else {
+				log.Printf("Zippo:   Key: %-8s Zip: %-9s Comment: unknown country\n", s.Key, s.Zip)
+				return r, nil
+			}
 		}
-	}
-	zr, err := Fetch(s, country)
+	*/
+	log.Printf("Zippo:   Key %-8s Zip: %-9s Country: %s\n", s.Key, s.Zip, s.Country)
+	zr, err := Fetch(s, s.Country)
 	if err != nil {
 		return r, err
 	}

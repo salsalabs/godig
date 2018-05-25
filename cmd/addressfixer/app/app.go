@@ -20,7 +20,7 @@ func main() {
 	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
 	chunkSize := kingpin.Flag("chunk-size", "Records per chunk").Default("50").Int()
 	live := kingpin.Flag("live", "Update the database.  USE EXTREME CAUTION!!!").PlaceHolder("LIVE").Default("false").Bool()
-	stdout := kingpin.Flag("log-console", "Show the log on the console").PlaceHolder("STDOUT").Default("false").Bool()
+	fileLog := kingpin.Flag("file-log", "Write the log to a timestamped File").PlaceHolder("File").Default("false").Bool()
 	fixerCount := kingpin.Flag("fixer-count", "Number of fixer threads").Default("1").Int()
 	kingpin.Parse()
 
@@ -31,7 +31,7 @@ func main() {
 	t := a.Supporter()
 
 	//Redirect 'log' to a timestamped file.
-	if !*stdout {
+	if *fileLog {
 		now := time.Now()
 		fn := fmt.Sprintf("addressfixer-%v.log", now.Format(time.RFC3339))
 		log.Printf("Main:    Logging to %v\n", fn)
@@ -43,6 +43,7 @@ func main() {
 		writer := bufio.NewWriter(f)
 		log.SetOutput(writer)
 	}
+	log.Printf("Main:    Start on %v with criteria '%v'\n", a.Host, *crit)
 
 	c1 := make(chan []addressfixer.Supporter, 1000)
 	c2 := make(chan []addressfixer.Supporter, 1000)

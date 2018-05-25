@@ -18,7 +18,7 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod) {
 			var mods []Mod
 			// Get country code for long country name.
 			// Do this before jumping into the postal code lookup.
-			mods, err := RestCountries(r, mods)
+			mods, err := RestCountries(&r, mods)
 			if err != nil {
 				log.Printf("Fix:    %v", err)
 			} else {

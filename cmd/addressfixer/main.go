@@ -18,10 +18,11 @@ type Supporter struct {
 
 //Mod describes a modification done to a supporter record.
 type Mod struct {
-	Key   string
-	Field string
-	Old   string
-	New   string
+	Key    string
+	Field  string
+	Old    string
+	New    string
+	Reason string
 }
 
 //Reader retrieves supporter records in batches and sends them

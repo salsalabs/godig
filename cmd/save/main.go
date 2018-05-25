@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("Authentication error %v\n", err)
 	}
 	t := api.NewTable(*table)
-	err = t.Save(*key, *cond)
+	_, err = t.Save(*key, *cond)
 	if err != nil {
 		log.Fatalf("Save error %v\n", err)
 	}
