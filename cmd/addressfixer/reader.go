@@ -28,6 +28,7 @@ func ReadAll(t *godig.Table, crit string, c1 chan []Supporter, id int, m *sync.M
 		count = len(a)
 		if count == 0 {
 			log.Printf("ReadAll: id %2d offset %7d, done\n", id, offset)
+			done <- true
 		} else {
 			c1 <- a
 			offset = offset + int32(count)

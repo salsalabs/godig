@@ -99,14 +99,18 @@ func main() {
 		}(&wg)
 	}
 	log.Println("Main:    All started")
-	offset <- 7
+	offset <- 0
 	log.Println("Main:    waiting...")
 	wg.Wait()
 
 	_ = <-done
+	log.Println("Main:    recieved done from a reader.   Closing up.")
+	close(c1)
 	close(c2)
 	close(c3)
 	close(c4)
+	ciose(offset)
+	close(done)
 	log.Println("Main:    done")
 
 }
