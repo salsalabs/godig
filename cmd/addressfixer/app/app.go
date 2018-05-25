@@ -21,6 +21,7 @@ func main() {
 	chunkSize := kingpin.Flag("chunk-size", "Records per chunk").Default("50").Int()
 	live := kingpin.Flag("live", "Update the database.  USE EXTREME CAUTION!!!").PlaceHolder("LIVE").Default("false").Bool()
 	fileLog := kingpin.Flag("file-log", "Write the log to a timestamped File").PlaceHolder("File").Default("false").Bool()
+	readerCount := kingpin.Flag("reader-count", "Number of reader threads").Default("1").Int()
 	fixerCount := kingpin.Flag("fixer-count", "Number of fixer threads").Default("1").Int()
 	kingpin.Parse()
 
@@ -49,6 +50,8 @@ func main() {
 	c2 := make(chan []addressfixer.Supporter, 1000)
 	c3 := make(chan []addressfixer.Supporter, 1000)
 	c4 := make(chan addressfixer.Mod, 1000)
+	done := make(chan bool)
+	offset := make(chan int32)
 	var wg sync.WaitGroup
 
 	log.Println("Main:    start")
@@ -85,15 +88,25 @@ func main() {
 	}(&wg)
 	log.Println("Main:    Chunk started")
 
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
-		defer w.Done()
-		addressfixer.ReadAll(&t, *crit, c1)
-	}(&wg)
+	log.Printf("Main:    Starting %v reader(s)\n", *fixerCount)
+	rm := &sync.Mutex{}
+	for i := 1; i <= *readerCount; i++ {
+		wg.Add(1)
+		log.Printf("Main:    Reader %v started\n", i)
+		go func(w *sync.WaitGroup) {
+			defer w.Done()
+			addressfixer.ReadAll(&t, *crit, c1, i, rm, offset, done)
+		}(&wg)
+	}
 	log.Println("Main:    All started")
-
+	offset <- 7
 	log.Println("Main:    waiting...")
 	wg.Wait()
+
+	_ = <-done
+	close(c2)
+	close(c3)
+	close(c4)
 	log.Println("Main:    done")
 
 }

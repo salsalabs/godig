@@ -20,10 +20,7 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod, m *sync.Mutex, i
 
 		if !ok {
 			break
-			log.Printf("Fix:     id %2d donev\n", id)
 		}
-		firstKey := a[0].Key
-		log.Printf("Fix:     id %2d snagged %3d records starting with %v\n", id, firstKey)
 
 		var t []Supporter
 		skipped := 0
