@@ -31,6 +31,7 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod, m *sync.Mutex, i
 		sent := 0
 
 		for _, r := range a {
+			log.Printf("Fix:     id %2d Key %-8d Receive_Email %s Email %s\n", id, r.Key, r.ReceiveEmail, r.Email)
 			var mods []Mod
 			// Get country code for long country name.
 			// Do this before jumping into the postal code lookup.
