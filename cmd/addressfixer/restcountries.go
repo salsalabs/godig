@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -51,7 +50,6 @@ func RFetch(s Supporter) (RResp, error) {
 func RestCountries(s Supporter, r []Mod) ([]Mod, error) {
 	if len(s.Country) > 2 {
 		rr, err := RFetch(s)
-		log.Printf("Rfetch returned %+v\n", rr)
 		if err != nil {
 			return r, err
 		}
