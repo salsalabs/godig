@@ -6,14 +6,15 @@ import (
 
 //Supporter defines the parts of the supporter record that this app uses.
 type Supporter struct {
-	Key     string `json:"supporter_KEY"`
-	Email   string
-	Street  string
-	Street2 string `json:"Street_2"`
-	City    string
-	State   string
-	Zip     string
-	Country string
+	Key          string `json:"supporter_KEY"`
+	Email        string
+	Street       string
+	Street2      string `json:"Street_2"`
+	City         string
+	State        string
+	Zip          string
+	Country      string
+	ReceiveEmail string `json:"Receive_Email"`
 }
 
 //Mod describes a modification done to a supporter record.
