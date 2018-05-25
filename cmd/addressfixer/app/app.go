@@ -26,7 +26,6 @@ func main() {
 	finisherCount := kingpin.Flag("finisher-count", "Number of finiser threads").Default("1").Int()
 	kingpin.Parse()
 
-	log.Printf("crit is %v\n" + *crit)
 	a, err := godig.YAMLAuth(*cpath)
 	if err != nil {
 		log.Fatalf("Authentication error: %+v\n", err)
@@ -88,7 +87,7 @@ func main() {
 			addressfixer.Fix(c2, c3, c4, fm, i)
 		}(&wg, i)
 	}
-	log.Printf("Main:    Started %v fixers(s)\n", *finisherCount)
+	log.Printf("Main:    Started %v fixer(s)\n", *finisherCount)
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
@@ -115,7 +114,8 @@ func main() {
 	for i = 0; i < 220000; i += 500 {
 		offset <- int32(i)
 	}
-	log.Printf("Main:    waiting for %d readers\n")
+
+	log.Printf("Main:    waiting for %d readers\n", *readerCount)
 	i = 0
 	for i < int32(*readerCount) {
 		_ = <-done
