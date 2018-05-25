@@ -17,7 +17,7 @@ import (
 //Mainline.  Find supporters and fix their addresses.
 func main() {
 	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
-	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
+	crit := kingpin.Flag("criteria", "Search for records matching this condition.").PlaceHolder("CRITERIA").String()
 	chunkSize := kingpin.Flag("chunk-size", "Records per chunk").Default("50").Int()
 	live := kingpin.Flag("live", "Update the database.  USE EXTREME CAUTION!!!").PlaceHolder("LIVE").Default("false").Bool()
 	fileLog := kingpin.Flag("file-log", "Write the log to a timestamped File").PlaceHolder("File").Default("false").Bool()
@@ -26,6 +26,7 @@ func main() {
 	finisherCount := kingpin.Flag("finisher-count", "Number of finiser threads").Default("1").Int()
 	kingpin.Parse()
 
+	log.Printf("crit is %v\n" + *crit)
 	a, err := godig.YAMLAuth(*cpath)
 	if err != nil {
 		log.Fatalf("Authentication error: %+v\n", err)
@@ -46,10 +47,10 @@ func main() {
 		log.SetOutput(writer)
 	}
 	log.Printf("Main:    Start on %v with %d readers, %d fixers, %d finishers, criteria '%v'\n",
+		a.Host,
 		*readerCount,
 		*fixerCount,
 		*finisherCount,
-		a.Host,
 		*crit)
 
 	c1 := make(chan []addressfixer.Supporter, 1000)
