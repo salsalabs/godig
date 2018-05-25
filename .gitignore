@@ -18,3 +18,9 @@
 
 # vendors directory
 vendor
+
+# log files
+*.log
+
+# temporary directory.
+tmp
