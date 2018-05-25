@@ -23,7 +23,7 @@ func Fix(c1 chan []Supporter, c2 chan []Supporter, c3 chan Mod, m *sync.Mutex, i
 		}
 		if len(a) > 0 {
 			f := a[0].Key
-			log.Printf("Fix:     id %2d %3d records starting at %7d", id, len(a), f)
+			log.Printf("Fix:     id %2d %3d records starting at %7s", id, len(a), f)
 		}
 
 		var t []Supporter
