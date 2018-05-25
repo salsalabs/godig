@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"gopkg.in/yaml.v2"
@@ -139,6 +140,9 @@ func (t *Table) Many(offset int, count int, crit string, target interface{}) err
 	body, err := t.ManyRaw(offset, count, crit)
 	if err == nil {
 		err = json.Unmarshal(body, &target)
+		if err != nil {
+			log.Printf("\nAPI.Many: Error %s\n offset: %v\ncount: %v\n,crit: '%v'\nbody: \n%v\n\n", err, offset, count, crit, string(body))
+		}
 	}
 	return err
 }
