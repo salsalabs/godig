@@ -23,6 +23,7 @@ func main() {
 	fileLog := kingpin.Flag("file-log", "Write the log to a timestamped File").PlaceHolder("File").Default("false").Bool()
 	readerCount := kingpin.Flag("reader-count", "Number of reader threads").Default("1").Int()
 	fixerCount := kingpin.Flag("fixer-count", "Number of fixer threads").Default("1").Int()
+	finisherCount := kingpin.Flag("finisher-count", "Number of finiser threads").Default("1").Int()
 	kingpin.Parse()
 
 	a, err := godig.YAMLAuth(*cpath)
@@ -44,7 +45,12 @@ func main() {
 		writer := bufio.NewWriter(f)
 		log.SetOutput(writer)
 	}
-	log.Printf("Main:    Start on %v with %s readers, %s fixers, criteria '%v'\n", a.Host, *crit)
+	log.Printf("Main:    Start on %v with %d readers, %d fixers, %d finishers, criteria '%v'\n",
+		*readerCount,
+		*fixerCount,
+		*finisherCount,
+		a.Host,
+		*crit)
 
 	c1 := make(chan []addressfixer.Supporter, 1000)
 	c2 := make(chan []addressfixer.Supporter, 1000)
@@ -63,44 +69,46 @@ func main() {
 	}(&wg)
 	log.Println("Main:    Audit started")
 
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
-		defer w.Done()
-		addressfixer.Finish(&t, c3, *live)
-	}(&wg)
-	log.Println("Main:    Finish started")
+	wm := &sync.Mutex{}
+	for i := 1; i <= *finisherCount; i++ {
+		wg.Add(1)
+		go func(w *sync.WaitGroup, i int) {
+			defer w.Done()
+			addressfixer.Finish(&t, c3, *live, wm, i)
+		}(&wg, i)
+	}
+	log.Printf("Main:    Started %v finisher(s)\n", *finisherCount)
 
-	log.Printf("Main:    Starting %v fixer(s)\n", *fixerCount)
 	fm := &sync.Mutex{}
 	for i := 1; i <= *fixerCount; i++ {
 		wg.Add(1)
-		log.Printf("Main:    Fix %v started\n", i)
 		go func(w *sync.WaitGroup, i int) {
 			defer w.Done()
 			addressfixer.Fix(c2, c3, c4, fm, i)
 		}(&wg, i)
 	}
+	log.Printf("Main:    Started %v fixers(s)\n", *finisherCount)
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		addressfixer.Chunk(c1, c2, *chunkSize)
 	}(&wg)
-	log.Println("Main:    Chunk started")
+	log.Println("Main:    Chunker started")
 
-	log.Printf("Main:    Starting %v reader(s)\n", *fixerCount)
 	rm := &sync.Mutex{}
 	for i := 1; i <= *readerCount; i++ {
 		wg.Add(1)
-		log.Printf("Main:    Reader %v started\n", i)
 		go func(w *sync.WaitGroup, i int) {
 			defer w.Done()
 			addressfixer.ReadAll(&t, *crit, c1, i, rm, offset, done)
 		}(&wg, i)
 	}
+	log.Printf("Main:    Started %v reader(s)\n", *fixerCount)
+
 	log.Println("Main:    All started")
 	log.Println("Main:    **************************************************")
-	log.Println("Main:    * CAUTION!  Max records is hardcoded to 200,000. *")
+	log.Println("Main:    * CAUTION!  Max records is hardcoded to 220,000. *")
 	log.Println("Main:    **************************************************")
 	var i int32
 	for i = 0; i < 220000; i += 500 {
