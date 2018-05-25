@@ -99,7 +99,12 @@ func main() {
 		}(&wg)
 	}
 	log.Println("Main:    All started")
-	offset <- 0
+	log.Println("Main:    ************************************************************")
+	log.Println("Main:    CAUTION!  The max number of records is hardcoded to 200,000.")
+	log.Println("Main:    ************************************************************")
+	for i := 0; i < 220000; i += 500 {
+		offset <- int32(i)
+	}
 	log.Println("Main:    waiting...")
 	wg.Wait()
 

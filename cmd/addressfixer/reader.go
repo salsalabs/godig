@@ -19,7 +19,7 @@ func ReadAll(t *godig.Table, crit string, c1 chan []Supporter, id int, m *sync.M
 		if !ok {
 			break
 		}
-		log.Printf("ReadAll: id %2d offset %7d", id, offset)
+		log.Printf("ReadAll: id %2d popped %7d", id, offset)
 		var a []Supporter
 		err := t.Many(int(offset), count, crit, &a)
 		if err != nil {
@@ -32,8 +32,8 @@ func ReadAll(t *godig.Table, crit string, c1 chan []Supporter, id int, m *sync.M
 		} else {
 			c1 <- a
 			offset = offset + int32(count)
-			c2 <- offset
-			log.Printf("ReadAll: id %2d sent %3d pushed offset %7d", id, len(a), offset)
+			// c2 <- offset
+			// log.Printf("ReadAll: id %2d sent %3d pushed offset %7d", id, len(a), offset)
 		}
 	}
 }

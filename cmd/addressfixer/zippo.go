@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -58,7 +57,7 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "State",
 			Old:    s.State,
 			New:    x.Abbr,
-			Reason: fmt.Sprintf("Z Lookup for %v in '%v'\n", s.Zip, s.Country)}
+			Reason: fmt.Sprintf("Z Lookup for %v\n", s.Zip)}
 		r = append(r, m)
 		s.State = x.Abbr
 	}
@@ -89,7 +88,7 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	p := s.Zip
 	switch c {
 	case "CA":
-		log.Printf("zippo:91 p is '%v' p has %d chars\n", p, len(p))
+		//log.Printf("zippo:91 p is '%v' p has %d chars\n", p, len(p))
 		if len(p) > 2 {
 			p = p[0:3]
 		}
