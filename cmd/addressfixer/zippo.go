@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -58,7 +57,7 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "State",
 			Old:    s.State,
 			New:    x.Abbr,
-			Reason: fmt.Sprintf("Z Lookup for %v in %v\n", s.Zip, s.Country)}
+			Reason: fmt.Sprintf("Z Lookup for %v in '%v'\n", s.Zip, s.Country)}
 		r = append(r, m)
 		s.State = x.Abbr
 	}
@@ -76,7 +75,7 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "Country",
 			Old:    s.Country,
 			New:    t.CountryCode,
-			Reason: fmt.Sprintf("Z Lookup for %v in %v\n", s.Zip, s.Country)}
+			Reason: fmt.Sprintf("Z Lookup for %v\n", s.Zip)}
 		r = append(r, m)
 		s.Country = t.CountryCode
 	}
@@ -93,6 +92,19 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	case "GB":
 		re := regexp.MustCompile(`^\w+\d+`)
 		p = re.FindString(p)
+	case "":
+		c = "US"
+	}
+	if c == "US" {
+		if len(s.Zip) == 4 {
+			zeroStates := strings.Split("CT,MA,MN,NH,NJ,PR,RI,VT,VI", ",")
+			for _, x := range zeroStates {
+				if s.State == x {
+					s.Zip = "0" + s.Zip
+					p = s.Zip
+				}
+			}
+		}
 	}
 	u := fmt.Sprintf("http://api.zippopotam.us/%v/%v", c, p)
 	//log.Printf("Zippo:   Reading %v\n", u)
@@ -128,18 +140,14 @@ func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 	if len(s.Zip) == 0 {
 		return r, nil
 	}
-	/*	country := "US"
-		if !isUS(s.Zip) {
-			if isCA(s.Zip) {
-				country = "CA"
-			} else {
-				log.Printf("Zippo:   Key: %-8s Zip: %-9s Comment: unknown country\n", s.Key, s.Zip)
-				return r, nil
-			}
-		}
-	*/
-	log.Printf("Zippo:   Key %-8s Zip: %-9s Country: %s\n", s.Key, s.Zip, s.Country)
-	zr, err := Fetch(s, s.Country)
+	country := s.Country
+	if isUS(s.Zip) {
+		country = "US"
+	}
+	if isCA(s.Zip) {
+		country = "CA"
+	}
+	zr, err := Fetch(s, country)
 	if err != nil {
 		return r, err
 	}
