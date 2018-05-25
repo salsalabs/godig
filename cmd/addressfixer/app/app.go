@@ -44,7 +44,7 @@ func main() {
 		writer := bufio.NewWriter(f)
 		log.SetOutput(writer)
 	}
-	log.Printf("Main:    Start on %v with criteria '%v'\n", a.Host, *crit)
+	log.Printf("Main:    Start on %v with %s readers, %s fixers, criteria '%v'\n", a.Host, *crit)
 
 	c1 := make(chan []addressfixer.Supporter, 1000)
 	c2 := make(chan []addressfixer.Supporter, 1000)
@@ -75,10 +75,10 @@ func main() {
 	for i := 1; i <= *fixerCount; i++ {
 		wg.Add(1)
 		log.Printf("Main:    Fix %v started\n", i)
-		go func(w *sync.WaitGroup) {
+		go func(w *sync.WaitGroup, i int) {
 			defer w.Done()
 			addressfixer.Fix(c2, c3, c4, fm, i)
-		}(&wg)
+		}(&wg, i)
 	}
 
 	wg.Add(1)
@@ -93,19 +93,27 @@ func main() {
 	for i := 1; i <= *readerCount; i++ {
 		wg.Add(1)
 		log.Printf("Main:    Reader %v started\n", i)
-		go func(w *sync.WaitGroup) {
+		go func(w *sync.WaitGroup, i int) {
 			defer w.Done()
 			addressfixer.ReadAll(&t, *crit, c1, i, rm, offset, done)
-		}(&wg)
+		}(&wg, i)
 	}
 	log.Println("Main:    All started")
-	log.Println("Main:    ************************************************************")
-	log.Println("Main:    CAUTION!  The max number of records is hardcoded to 200,000.")
-	log.Println("Main:    ************************************************************")
-	for i := 0; i < 220000; i += 500 {
+	log.Println("Main:    **************************************************")
+	log.Println("Main:    * CAUTION!  Max records is hardcoded to 200,000. *")
+	log.Println("Main:    **************************************************")
+	var i int32
+	for i = 0; i < 220000; i += 500 {
 		offset <- int32(i)
 	}
-	log.Println("Main:    waiting...")
+	log.Printf("Main:    waiting for %d readers\n")
+	i = 0
+	for i < int32(*readerCount) {
+		_ = <-done
+		i = i + 1
+		log.Printf("Main:    %2d Reader(s) done", i)
+	}
+	// Wait for done to ripple down
 	wg.Wait()
 
 	_ = <-done
