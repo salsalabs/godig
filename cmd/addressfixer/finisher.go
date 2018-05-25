@@ -35,16 +35,16 @@ func Finish(t *godig.Table, c chan []Supporter, live bool) {
 			}
 		}
 		count = count + int32(len(a))
-	/*
-		if live {
-			body, err := t.SaveBulk(b.String())
-			if err != nil {
-				panic(err)
+		/*
+			if live {
+				body, err := t.SaveBulk(b.String())
+				if err != nil {
+					panic(err)
+				}
+				log.Printf("Finish:  saved %v\n", len(a))
+				log.Printf("Finish:  /save returned %v\n", string(body))
 			}
-			log.Printf("Finish:  saved %v\n", len(a))
-			log.Printf("Finish:  /save returned %v\n", string(body))
-		}
+		*/
 	}
-	*/
 	log.Printf("Finish:  done, count %v", count)
 }
