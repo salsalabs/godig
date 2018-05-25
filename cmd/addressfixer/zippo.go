@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -88,7 +89,10 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	p := s.Zip
 	switch c {
 	case "CA":
-		p = p[0:3]
+		log.Printf("zippo:91 p is '%v' p has %d chars\n", p, len(p))
+		if len(p) > 2 {
+			p = p[0:3]
+		}
 	case "GB":
 		re := regexp.MustCompile(`^\w+\d+`)
 		p = re.FindString(p)
@@ -111,6 +115,10 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	var body []byte
 	var zr ZResult
 	resp, err := http.Get(u)
+	if resp == nil {
+		err = fmt.Errorf("Key: %-8s HTTP null resonse object on %v", s.Key, u)
+		return zr, err
+	}
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("Key: %-8s HTTP error %v on %v", s.Key, resp.Status, u)
 	}
