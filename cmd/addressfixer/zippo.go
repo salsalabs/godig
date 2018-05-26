@@ -95,7 +95,7 @@ func MatchPostal(s Supporter) (bool, string) {
 			for _, x := range c {
 				e := strings.ToUpper(s.Email)
 				if strings.HasSuffix(e, "."+x) {
-					log.Printf("Zippo:   Key: %8s '%v''%v' changing '%v' to '%v'\n", s.Key, s.Email, s.Country, x)
+					log.Printf("Zippo:   Key: %8s '%v' changing '%v' to '%v'\n", s.Key, s.Email, s.Country, x)
 					if x == "US" && len(s.Country) == 0 {
 						return true, s.Country
 					}
@@ -125,7 +125,7 @@ func City(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "City",
 			Old:    s.City,
 			New:    name,
-			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
+			Reason: fmt.Sprintf("Postal code match, %v", s.Zip)}
 		r = append(r, m)
 		s.City = name
 	}
@@ -146,7 +146,7 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "State",
 			Old:    s.State,
 			New:    x.Abbr,
-			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
+			Reason: fmt.Sprintf("Postal code match, %v", s.Zip)}
 		r = append(r, m)
 		s.State = x.Abbr
 	}
@@ -162,7 +162,7 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "Country",
 			Old:    s.Country,
 			New:    t.CountryCode,
-			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
+			Reason: fmt.Sprintf("Postal code match, %v", s.Zip)}
 		r = append(r, m)
 		s.Country = t.CountryCode
 	}
