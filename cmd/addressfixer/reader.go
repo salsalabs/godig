@@ -22,22 +22,24 @@ func ReadAll(t *godig.Table, crit string, c1 chan []Supporter, id int, m *sync.M
 		var a []Supporter
 		count := 500
 		err := t.Many(int(offset), count, crit, &a)
+		// Errors are not fatal because deadline.
 		if err != nil {
-			log.Fatalf("ReadAll: id %2d offset %6d %v\n", id, offset, err)
-		}
-		// Empty read returns [{  }].  Interesting, no?
-		count = len(a)
-		if count == 1 && len(a[0].Key) == 0 {
-			count = 0
-		}
-		if count == 0 {
-			log.Printf("ReadAll: id %2d offset %7d, done\n", id, offset)
-			done <- true
+			log.Printf("ReadAll: id %2d offset %6d %v\n", id, offset, err)
 		} else {
-			c1 <- a
-			offset = offset + int32(count)
-			// c2 <- offset
-			// log.Printf("ReadAll: id %2d sent %3d pushed offset %7d", id, len(a), offset)
+			// Empty read returns [{  }].  Interesting, no?
+			count = len(a)
+			if count == 1 && len(a[0].Key) == 0 {
+				count = 0
+			}
+			if count == 0 {
+				log.Printf("ReadAll: id %2d offset %7d, done\n", id, offset)
+				done <- true
+			} else {
+				c1 <- a
+				offset = offset + int32(count)
+				// c2 <- offset
+				// log.Printf("ReadAll: id %2d sent %3d pushed offset %7d", id, len(a), offset)
+			}
 		}
 	}
 }
