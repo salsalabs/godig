@@ -11,7 +11,12 @@ import (
 )
 
 const (
-	Five = "D5"
+	//Ca is the regex that matches postal codes in Canada.
+	CA string = `^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`
+	//GB is the regex that matches postal codes in Great Britain.  Very long...
+	GB string = `^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))[0-9][A-Za-z]{2})$`
+	//NL the the regex that mathes postal codes for the Netherlands.  Also very long...
+	NL string = `(?:NL-)?(?:[1-9]\d{3} ?(?:[A-EGHJ-NPRTVWXZ][A-EGHJ-NPRSTVWXZ]|S[BCEGHJ-NPRTVWXZ]))$`
 )
 
 //Place is returned by Zippopotamus for a match with the zipcode.
@@ -24,7 +29,7 @@ type ZPlace struct {
 }
 
 //Result is return by Zippotamus for all places that match a
-//ZIP/postal code.
+//postal code.
 type ZResult struct {
 	PostCode    string `json:"post code"`
 	Country     string `json:"country"`
@@ -32,37 +37,75 @@ type ZResult struct {
 	Places      []ZPlace
 }
 
+//PMap maps a regex pattern to a list of matching country codes.
+type PMap map[string][]string
+
 //MatchPostal searches a list of regexes for a zipcode.  Returns
-//country and try if there's a match.  Sources are StackTrace
+//a matched indicator and the country code.  Sources are StackTrace
 //and https://rgxdb.com/
-func MatchPostal(z string) (bool, string) {
-	m := map[string]string{
-		// Lots of countries have just \d{5}.  Need to disambiguate if we
-		// start to see those folks in our databases.
-		Five: `^\d{5}$`,
-		"BR": `^\d{5}-?\d{3}$`,
-		"CA": `^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`,
-		"GB": `^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))[0-9][A-Za-z]{2})$`,
-		"NL": `^(?:NL-)?(?:[1-9]\d{3} ?(?:[A-EGHJ-NPRTVWXZ][A-EGHJ-NPRSTVWXZ]|S[BCEGHJ-NPRTVWXZ]))$`,
-		"US": `^\d{5}(?:[-\s]\d{4})?$`}
-	for c, p := range m {
-		if regexp.MustCompile(p).MatchString(z) {
-			return true, c
-		}
-	}
-	return false, ""
+func MatchPostal(s Supporter) (bool, string) {
+	m := PMap{
+		CA: []string{"CA"},
+		GB: []string{"GB"},
+		NL: []string{"NL"},
+		`^\d{6}$`: []string{"BY","CN","NN","EC","KZ","KG","NG","RO","RU","SG","TJ","TT","TM","UZ","VN"},
+		`^\d{5}$`: []string{"AX","AX","BA","BR","BT","CC","CP","CP","CR","DE","DO","DZ","EE","EG","ES",
+					"FR","GT","HR","ID","IQ","IT","KH","KR","KW","LA","LB","LK","MA","ME","MM",
+					"MN","MU","MV","MX","MY","NI","NP","PE","PK","PO","PO","PO","RS","RS","SD",
+					"TH","TR","TZ","UA","UY","XK","ZM"},
+		`^\d{5}-?\d{3}$`: []string{"BR"},
+		`^\d{5}(?:[-\s}\d{4})?$`: []string{"US"},
+		`^\d{4}$`: []string{"AF","AL","AR","AM","AU","AT","BD","BE","BG","CV",
+					"CX","CC","CY","DK","SV","ET","GE","DE","GL","GW",
+					"HT","HU","LR","LI","LU","MK","MZ","NZ","NE","NF",
+					"NO","PA","PY","PH","PT","SG","ZA","CH","SJ","TN"},
+		`^\d{3}$`: []string{"FO","GN","IS","LS","NG","OM","PS","PG"},
+		`^00120$`: []string{"VA"},
+		`^00[6-9}(?:[-\s}\d{4})`: []string{"PR"},
+		`^008[0-5}\d`: []string{"VI"},
+		`^4789\d$`: []string{"SM"},
+		`^96799(?:[-\s}\d{4})$`: []string{"AS"},
+		`^9691\d{2}(?:[-\s}\d{4})?$`: []string{"GU"},
+		`^9695[0-2}:[-\s}\d{4})?$`: []string{"MP"},
+		`^96960$`: []string{"PW"},
+		`^969[6-7}\d:[-\s}\d{4})?$`: []string{"MH"},
+		`^9694[1-4}(?:[-\s}\d{4})?$`: []string{"FM"},
+		`^971\d{2}$`: []string{"GP"},
+		`^97133$`: []string{"BL"},
+		`^97150$`: []string{"MF"},
+		`^972\d{2}`: []string{"MQ"},
+		`^973\d{2}$`: []string{"GF"},
+		`^974\d{2}$`: []string{"RE"},
+		`^975\d{2}$`: []string{"PM"},
+		`^976\d{2}$`: []string{"YT"},
+		`^980\d{2}$`: []string{"MC"},
+		`^986\d{2}$`: []string{"WF"},
+		`^987\d{2}$`: []string{"PF"},
+		`^988\d{2}$`: []string{"NC"},
+		`^LC`: []string{"LC"},
+		`^PCRN`: []string{"PN"},
+		`^SIQQ`: []string{"GS"},
+		`^TKCA`: []string{"TC"},
 }
 
-//fiveDigits disambiguates a supporter record that has five digits in
-//the zip code. Sets the country code.
-func fiveDigits(s Supporter) string {
-	m := strings.Split("fr,es,de,it", ",")
-	for _, x := range m {
-		if strings.HasSuffix(s.Email, "."+x) {
-			return strings.ToUpper(x)
+	if len(s.Zip) == 0 {
+		return false, ""
+	}
+	for p, c := range m {
+		if regexp.MustCompile(m).MatchString(s.Zip) {
+			for _, x := range c {
+				e := strings.ToUpper(s.Email)
+				if strings.HasSuffix(e, "."+x) {
+				log.Printf("Zippo:   Key: %8s '%v' changing '%v' to '%v'\n", s.Key, s.Country, c)
+				if c == "US" && len(c.Country) == 0 {
+					return true, c.Country
+				}
+				return true, c
+			}
 		}
 	}
-	return "US"
+	// Default to the US.  Open for discussion.
+	return false, "US"
 }
 
 //City checks to see if the supporter's state is correct.  If not, then
@@ -107,7 +150,6 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 //Country checks to see if the supporter's state is correct.  If not, then
 //the record is changed and a Mod is added to the list of modifications.
 func Country(s Supporter, t ZResult, r []Mod) []Mod {
-	s.Country = strings.TrimSpace(s.Country)
 	if len(s.Country) != 0 && s.Country != t.CountryCode {
 		m := Mod{
 			Key:    s.Key,
@@ -123,12 +165,10 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 
 //Fetch retrieves information for a zip code.
 func Fetch(s Supporter, c string) (ZResult, error) {
-	// Zippopotamus only needs the first three digits for Canada.
+	// Make adjustment to the postal code submitted to Zippopotamus.
 	p := s.Zip
 	switch c {
 	case "CA":
-		//log.Printf("zippo:91 p is '%v' p has %d chars\n", p, len(p))
-		//Zippopotamus only needs the first three digits (FSA).
 		if len(p) > 2 {
 			p = p[0:3]
 		}
@@ -139,15 +179,6 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 		c = "US"
 	}
 	if c == "US" {
-		if len(s.Zip) == 4 {
-			zeroStates := strings.Split("CT,MA,MN,NH,NJ,PR,RI,VT,VI", ",")
-			for _, x := range zeroStates {
-				if s.State == x {
-					s.Zip = "0" + s.Zip
-					p = s.Zip
-				}
-			}
-		}
 		if strings.Contains(s.Zip, "-") {
 			p = strings.Split(s.Zip, "-")[0]
 		}
@@ -185,20 +216,33 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	return zr, err
 }
 
+//FixShortZips adds a leading zero to a Zip code if the country is "US",
+//the postal code has four digits, and the state is one of the US states
+//that has a leading zero.
+func fixShortZips(s Supporter) {
+	r := regexp.Compile(`^\d{4}$`)
+	if len(s.Country) == 0 && s.Country == "US" && r.MatchString(s.Zip) {
+		zeroStates := strings.Split("CT,MA,MN,NH,NJ,PR,RI,VT,VI", ",")
+		for _, x := range zeroStates {
+			if s.State == x {
+				s.Zip = "0" + s.Zip
+			}
+		}
+	}
+
+}
+
 //Zippo does a lookup using the free service from http://www.zippopotam.us/.
 //Note that ambiguous results from Zippopotamus are not applied.
 func Zippo(s Supporter, r []Mod) ([]Mod, error) {
+	s.Country = strings.TrimSpace(s.Country)
+	s.Zip = strings.TrimSpace(s.Zip)
 	if len(s.Zip) == 0 {
 		return r, nil
 	}
+	FixShortZips(s)
 	m, c := MatchPostal(s.Zip)
 	if m {
-		switch c {
-		case "":
-			c = "US"
-		case Five:
-			c = fiveDigits(s)
-		}
 		if c != s.Country && (c != "US" && len(s.Country) == 0) {
 			m := Mod{
 				Key:    s.Key,
