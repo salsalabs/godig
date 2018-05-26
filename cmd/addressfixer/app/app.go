@@ -87,7 +87,7 @@ func main() {
 			addressfixer.Fix(c2, c3, c4, fm, i)
 		}(&wg, i)
 	}
-	log.Printf("Main:    Started %v fixer(s)\n", *finisherCount)
+	log.Printf("Main:    Started %v fixer(s)\n", *fixerCount)
 
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
