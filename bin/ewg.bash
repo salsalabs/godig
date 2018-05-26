@@ -1,4 +1,4 @@
-!#! /bin/bash
+#! /bin/bash
 rm -f addressfixer*.log
 go run cmd/addressfixer/app/app.go \
 --credentials credentials/ewg.yaml \
