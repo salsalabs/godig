@@ -45,62 +45,62 @@ type PMap map[string][]string
 //and https://rgxdb.com/
 func MatchPostal(s Supporter) (bool, string) {
 	m := PMap{
-		CA: []string{"CA"},
-		GB: []string{"GB"},
-		NL: []string{"NL"},
-		`^\d{6}$`: []string{"BY","CN","NN","EC","KZ","KG","NG","RO","RU","SG","TJ","TT","TM","UZ","VN"},
-		`^\d{5}$`: []string{"AX","AX","BA","BR","BT","CC","CP","CP","CR","DE","DO","DZ","EE","EG","ES",
-					"FR","GT","HR","ID","IQ","IT","KH","KR","KW","LA","LB","LK","MA","ME","MM",
-					"MN","MU","MV","MX","MY","NI","NP","PE","PK","PO","PO","PO","RS","RS","SD",
-					"TH","TR","TZ","UA","UY","XK","ZM"},
+		CA:        []string{"CA"},
+		GB:        []string{"GB"},
+		NL:        []string{"NL"},
+		`^\d{6}$`: []string{"BY", "CN", "NN", "EC", "KZ", "KG", "NG", "RO", "RU", "SG", "TJ", "TT", "TM", "UZ", "VN"},
+		`^\d{5}$`: []string{"AX", "AX", "BA", "BR", "BT", "CC", "CP", "CP", "CR", "DE", "DO", "DZ", "EE", "EG", "ES",
+			"FR", "GT", "HR", "ID", "IQ", "IT", "KH", "KR", "KW", "LA", "LB", "LK", "MA", "ME", "MM",
+			"MN", "MU", "MV", "MX", "MY", "NI", "NP", "PE", "PK", "PO", "PO", "PO", "RS", "RS", "SD",
+			"TH", "TR", "TZ", "UA", "UY", "XK", "ZM"},
 		`^\d{5}-?\d{3}$`: []string{"BR"},
-		`^\d{5}(?:[-\s}\d{4})?$`: []string{"US"},
-		`^\d{4}$`: []string{"AF","AL","AR","AM","AU","AT","BD","BE","BG","CV",
-					"CX","CC","CY","DK","SV","ET","GE","DE","GL","GW",
-					"HT","HU","LR","LI","LU","MK","MZ","NZ","NE","NF",
-					"NO","PA","PY","PH","PT","SG","ZA","CH","SJ","TN"},
-		`^\d{3}$`: []string{"FO","GN","IS","LS","NG","OM","PS","PG"},
-		`^00120$`: []string{"VA"},
-		`^00[6-9}(?:[-\s}\d{4})`: []string{"PR"},
-		`^008[0-5}\d`: []string{"VI"},
-		`^4789\d$`: []string{"SM"},
-		`^96799(?:[-\s}\d{4})$`: []string{"AS"},
-		`^9691\d{2}(?:[-\s}\d{4})?$`: []string{"GU"},
-		`^9695[0-2}:[-\s}\d{4})?$`: []string{"MP"},
-		`^96960$`: []string{"PW"},
-		`^969[6-7}\d:[-\s}\d{4})?$`: []string{"MH"},
-		`^9694[1-4}(?:[-\s}\d{4})?$`: []string{"FM"},
-		`^971\d{2}$`: []string{"GP"},
-		`^97133$`: []string{"BL"},
-		`^97150$`: []string{"MF"},
-		`^972\d{2}`: []string{"MQ"},
-		`^973\d{2}$`: []string{"GF"},
-		`^974\d{2}$`: []string{"RE"},
-		`^975\d{2}$`: []string{"PM"},
-		`^976\d{2}$`: []string{"YT"},
-		`^980\d{2}$`: []string{"MC"},
-		`^986\d{2}$`: []string{"WF"},
-		`^987\d{2}$`: []string{"PF"},
-		`^988\d{2}$`: []string{"NC"},
-		`^LC`: []string{"LC"},
-		`^PCRN`: []string{"PN"},
-		`^SIQQ`: []string{"GS"},
-		`^TKCA`: []string{"TC"},
-}
+		`^\d{4}$`: []string{"AF", "AL", "AR", "AM", "AU", "AT", "BD", "BE", "BG", "CV",
+			"CX", "CC", "CY", "DK", "SV", "ET", "GE", "DE", "GL", "GW",
+			"HT", "HU", "LR", "LI", "LU", "MK", "MZ", "NZ", "NE", "NF",
+			"NO", "PA", "PY", "PH", "PT", "SG", "ZA", "CH", "SJ", "TN"},
+		`^\d{3}$`:                     []string{"FO", "GN", "IS", "LS", "NG", "OM", "PS", "PG"},
+		`^00120$`:                     []string{"VA"},
+		`^00[6-9](?:[-\s]\d{4})`:      []string{"PR"},
+		`^008[0-5]\d`:                 []string{"VI"},
+		`^4789\d$`:                    []string{"SM"},
+		`^96799(?:[-\s]\d{4})$`:       []string{"AS"},
+		`^9691\d{2}(?:[-\s]\d{4})?$`:  []string{"GU"},
+		`^9695[0-2](?:[-\s]\d{4})?$`:  []string{"MP"},
+		`^96960$`:                     []string{"PW"},
+		`^969[6-7]\d(?:[-\s]\d{4})?$`: []string{"MH"},
+		`^9694[1-4](?:[-\s]\d{4})?$`:  []string{"FM"},
+		`^971\d{2}$`:                  []string{"GP"},
+		`^97133$`:                     []string{"BL"},
+		`^97150$`:                     []string{"MF"},
+		`^972\d{2}`:                   []string{"MQ"},
+		`^973\d{2}$`:                  []string{"GF"},
+		`^974\d{2}$`:                  []string{"RE"},
+		`^975\d{2}$`:                  []string{"PM"},
+		`^976\d{2}$`:                  []string{"YT"},
+		`^980\d{2}$`:                  []string{"MC"},
+		`^986\d{2}$`:                  []string{"WF"},
+		`^987\d{2}$`:                  []string{"PF"},
+		`^988\d{2}$`:                  []string{"NC"},
+		`^LC`:                         []string{"LC"},
+		`^PCRN`:                       []string{"PN"},
+		`^SIQQ`:                       []string{"GS"},
+		`^TKCA`:                       []string{"TC"},
+	}
 
 	if len(s.Zip) == 0 {
 		return false, ""
 	}
 	for p, c := range m {
-		if regexp.MustCompile(m).MatchString(s.Zip) {
+		if regexp.MustCompile(p).MatchString(s.Zip) {
 			for _, x := range c {
 				e := strings.ToUpper(s.Email)
 				if strings.HasSuffix(e, "."+x) {
-				log.Printf("Zippo:   Key: %8s '%v' changing '%v' to '%v'\n", s.Key, s.Country, c)
-				if c == "US" && len(c.Country) == 0 {
-					return true, c.Country
+					log.Printf("Zippo:   Key: %8s '%v''%v' changing '%v' to '%v'\n", s.Key, s.Email, s.Country, x)
+					if x == "US" && len(s.Country) == 0 {
+						return true, s.Country
+					}
+					return true, x
 				}
-				return true, c
 			}
 		}
 	}
@@ -113,6 +113,12 @@ func MatchPostal(s Supporter) (bool, string) {
 func City(s Supporter, t ZResult, r []Mod) []Mod {
 	s.City = strings.TrimSpace(s.City)
 	name := t.Places[0].Name
+	// Zippopotamus shows neighboring towns in a neighborhood
+	// in parens.  Not really a good city name.
+	if strings.Contains(name, "(") {
+		name = strings.Split(name, "(")[0]
+		name = strings.TrimSpace(name)
+	}
 	if len(s.City) == 0 {
 		m := Mod{
 			Key:    s.Key,
@@ -219,8 +225,8 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 //FixShortZips adds a leading zero to a Zip code if the country is "US",
 //the postal code has four digits, and the state is one of the US states
 //that has a leading zero.
-func fixShortZips(s Supporter) {
-	r := regexp.Compile(`^\d{4}$`)
+func FixShortZips(s Supporter) {
+	r := regexp.MustCompile(`^\d{4}$`)
 	if len(s.Country) == 0 && s.Country == "US" && r.MatchString(s.Zip) {
 		zeroStates := strings.Split("CT,MA,MN,NH,NJ,PR,RI,VT,VI", ",")
 		for _, x := range zeroStates {
@@ -241,7 +247,7 @@ func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 		return r, nil
 	}
 	FixShortZips(s)
-	m, c := MatchPostal(s.Zip)
+	m, c := MatchPostal(s)
 	if m {
 		if c != s.Country && (c != "US" && len(s.Country) == 0) {
 			m := Mod{
