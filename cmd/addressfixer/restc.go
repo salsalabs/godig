@@ -61,7 +61,7 @@ func RestCountries(s *Supporter, r []Mod) ([]Mod, error) {
 			Field:  "Country",
 			Old:    s.Country,
 			New:    rr.Alpha2Code,
-			Reason: "RC Lookup"}
+			Reason: fmt.Sprintf("Country match, '%s'", s.Country)}
 		s.Country = rr.Alpha2Code
 		r = append(r, m)
 	}
