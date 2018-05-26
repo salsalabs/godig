@@ -27,7 +27,7 @@ func Finish(t *godig.Table, c1 chan []Supporter, live bool, m *sync.Mutex, id in
 		b := bytes.NewBufferString("")
 		for _, s := range a {
 			if len(s.State) == 0 {
-				log.Printf("Finish:  Key %7s, City: '%s' State: '%s' Zip: '%s' Country: '%s'\n", s.Key, s.City, s.State, s.Zip, s.Country)
+				log.Printf("Finish:  Key %7s, '%s' '%s' '%s' '%s'\n", s.Key, s.City, s.State, s.Zip, s.Country)
 			}
 			// log.Printf("Finish: %+v\n", s)
 			p := []string{
