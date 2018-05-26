@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
+)
+
+const (
+	Five = "D5"
 )
 
 //Place is returned by Zippopotamus for a match with the zipcode.
@@ -27,24 +32,37 @@ type ZResult struct {
 	Places      []ZPlace
 }
 
-//isCA returns true if the provided postal code is a ZIP code.  Note
-//that other countries also use five numeric digits for postal codes.
-//We are ignoring the ambiguity for the time being.
-func isCA(z string) bool {
-	p := `^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`
-	m := regexp.MustCompile(p).MatchString(z)
-	return m
+//MatchPostal searches a list of regexes for a zipcode.  Returns
+//country and try if there's a match.  Sources are StackTrace
+//and https://rgxdb.com/
+func MatchPostal(z string) (bool, string) {
+	m := map[string]string{
+		// Lots of countries have just \d{5}.  Need to disambiguate if we
+		// start to see those folks in our databases.
+		Five: `^\d{5}$`,
+		"BR": `^\d{5}-?\d{3}$`,
+		"CA": `^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`,
+		"GB": `^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))[0-9][A-Za-z]{2})$`,
+		"NL": `^(?:NL-)?(?:[1-9]\d{3} ?(?:[A-EGHJ-NPRTVWXZ][A-EGHJ-NPRSTVWXZ]|S[BCEGHJ-NPRTVWXZ]))$`,
+		"US": `^\d{5}(?:[-\s]\d{4})?$`}
+	for c, p := range m {
+		if regexp.MustCompile(p).MatchString(z) {
+			return true, c
+		}
+	}
+	return false, ""
 }
 
-//isUS returns true if the provided postal code is a ZIP code.  Note
-//that other countries also use five numeric digits for postal codes.
-//We are ignoring the ambiguity for the time being.
-func isUS(z string) bool {
-	// Add check against phone number
-	// Add check for domain name
-	p := `^\d{5}(?:[-\s]\d{4})?$`
-	m := regexp.MustCompile(p).MatchString(z)
-	return m
+//fiveDigits disambiguates a supporter record that has five digits in
+//the zip code. Sets the country code.
+func fiveDigits(s Supporter) string {
+	m := strings.Split("fr,es,de,it", ",")
+	for _, x := range m {
+		if strings.HasSuffix(s.Email, "."+x) {
+			return strings.ToUpper(x)
+		}
+	}
+	return "US"
 }
 
 //State checks to see if the supporter's state is correct.  If not, then
@@ -61,11 +79,10 @@ func State(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "State",
 			Old:    s.State,
 			New:    x.Abbr,
-			Reason: fmt.Sprintf("Z Lookup for %v\n", s.Zip)}
+			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
 		r = append(r, m)
 		s.State = x.Abbr
 	}
-
 	return r
 }
 
@@ -79,7 +96,7 @@ func Country(s Supporter, t ZResult, r []Mod) []Mod {
 			Field:  "Country",
 			Old:    s.Country,
 			New:    t.CountryCode,
-			Reason: fmt.Sprintf("Z Lookup for %v\n", s.Zip)}
+			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
 		r = append(r, m)
 		s.Country = t.CountryCode
 	}
@@ -101,16 +118,7 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 		re := regexp.MustCompile(`^\w+\d+`)
 		p = re.FindString(p)
 	case "":
-		if isCA(p) {
-			c = "CA"
-			s.Country = "CA"
-			//Zippopotamus only needs the first three digits (FSA).
-			if len(p) > 2 {
-				p = p[0:3]
-			}
-		} else {
-			c = "US"
-		}
+		c = "US"
 	}
 	if c == "US" {
 		if len(s.Zip) == 4 {
@@ -122,9 +130,14 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 				}
 			}
 		}
+		if strings.Contains(s.Zip, "-") {
+			p = strings.Split(s.Zip, "-")[0]
+		}
 	}
 	u := fmt.Sprintf("http://api.zippopotam.us/%v/%v", c, p)
-	//log.Printf("Zippo:   Reading %v\n", u)
+	if c != "US" {
+		log.Printf("Zippo:   Reading %v\n", u)
+	}
 	var body []byte
 	var zr ZResult
 	resp, err := http.Get(u)
@@ -147,7 +160,6 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	if err != nil {
 		return zr, err
 	}
-	//log.Printf("Zippo:   Result is %+v\n", zr)
 	if len(zr.Places) == 0 {
 		err = fmt.Errorf("no results for %v", s.Zip)
 		return zr, err
@@ -161,14 +173,27 @@ func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 	if len(s.Zip) == 0 {
 		return r, nil
 	}
-	country := s.Country
-	if isUS(s.Zip) {
-		country = "US"
+	m, c := MatchPostal(s.Zip)
+	if m {
+		switch c {
+		case "":
+			c = "US"
+		case Five:
+			c = fiveDigits(s)
+		}
+		if c != s.Country && (c != "US" && len(s.Country) == 0) {
+			m := Mod{
+				Key:    s.Key,
+				Field:  "Country",
+				Old:    s.Country,
+				New:    c,
+				Reason: fmt.Sprintf("Z pattern match for %v\n", s.Zip)}
+			r = append(r, m)
+			s.Country = c
+
+		}
 	}
-	if isCA(s.Zip) {
-		country = "CA"
-	}
-	zr, err := Fetch(s, country)
+	zr, err := Fetch(s, c)
 	if err != nil {
 		return r, err
 	}
