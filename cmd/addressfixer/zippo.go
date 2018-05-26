@@ -160,7 +160,7 @@ func Fetch(s Supporter, c string) (ZResult, error) {
 	var zr ZResult
 	resp, err := http.Get(u)
 	if resp == nil {
-		err = fmt.Errorf("Key: %-8s HTTP null resonse object on %v", s.Key, u)
+		err = fmt.Errorf("Key: %-8s HTTP null response object on %v", s.Key, u)
 		return zr, err
 	}
 	if resp.StatusCode != 200 {
