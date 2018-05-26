@@ -65,6 +65,24 @@ func fiveDigits(s Supporter) string {
 	return "US"
 }
 
+//City checks to see if the supporter's state is correct.  If not, then
+//the record is changed and a Mod is added to the list of modifications.
+func City(s Supporter, t ZResult, r []Mod) []Mod {
+	s.City = strings.TrimSpace(s.City)
+	name := t.Places[0].Name
+	if len(s.City) == 0 {
+		m := Mod{
+			Key:    s.Key,
+			Field:  "City",
+			Old:    s.City,
+			New:    name,
+			Reason: fmt.Sprintf("Z Lookup for %v", s.Zip)}
+		r = append(r, m)
+		s.City = name
+	}
+	return r
+}
+
 //State checks to see if the supporter's state is correct.  If not, then
 //the record is changed and a Mod is added to the list of modifications.
 func State(s Supporter, t ZResult, r []Mod) []Mod {
@@ -197,6 +215,7 @@ func Zippo(s Supporter, r []Mod) ([]Mod, error) {
 	if err != nil {
 		return r, err
 	}
+	r = City(s, zr, r)
 	r = State(s, zr, r)
 	r = Country(s, zr, r)
 	return r, err
