@@ -13,8 +13,9 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-# credentials file that we never want to have checked in.  Ever!
+# Login credentials.
 *credentials*
+*.yaml
 
 # vendors directory
 vendor
