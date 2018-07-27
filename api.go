@@ -147,6 +147,24 @@ func (t *Table) Many(offset int, count int, crit string, target interface{}) err
 	return err
 }
 
+//ManyBig reads many records via the API. Many reads the URL, applies the criteria if
+// it's not empty.  The offiset is a 32-bin integer.  The count is a small integer because
+// Salsa only allows 500 records when reading via the API.
+//
+//The read returns up to "count" or 500 records, whichever is
+// smaller.  End of data is when number of records is zero. The target is populated
+// with an array of records.  An empty target means that no more data is available.
+func (t *Table) ManyBig(offset int32, count int, crit string, target interface{}) error {
+	body, err := t.ManyRawBig(offset, count, crit)
+	if err == nil {
+		err = json.Unmarshal(body, &target)
+		if err != nil {
+			log.Printf("\nAPI.Many: Error %s\n offset: %v\ncount: %v\n,crit: '%v'\nbody: \n%v\n\n", err, offset, count, crit, string(body))
+		}
+	}
+	return err
+}
+
 //ManyRaw reads many records via the API and returns a buffer.
 func (t *Table) ManyRaw(offset int, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
@@ -155,6 +173,20 @@ func (t *Table) ManyRaw(offset int, count int, crit string) ([]byte, error) {
 		x = x + "&condition=" + crit
 	}
 	// fmt.Printf("Many reading %v\n", x)
+	_, body, err := t.Get(x)
+	return body, err
+}
+
+//ManyRawBig reads many records via the API and returns a buffer.
+//offset is a 32-bin integer.  Count can be an int because we can't
+//read more than 500 records from Salsa via the API.
+func (t *Table) ManyRawBig(offset int32, count int, crit string) ([]byte, error) {
+	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
+	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
+	if len(crit) != 0 {
+		x = x + "&condition=" + crit
+	}
+	//fmt.Printf("ManyRawBig: %v\n", x)
 	_, body, err := t.Get(x)
 	return body, err
 }
