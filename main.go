@@ -65,6 +65,13 @@ func (a *API) Supporter() Table {
 	return a.NewTable("supporter")
 }
 
+//SupporterDonation is a shortcut for creating a Table that 
+//holds supporter and donation records.
+func (a *API) SupporterDonation() Table {
+	return a.NewTable("supporter(supporter_KEY)donation")
+}
+
+//SupporterGroups is a shortcut for creating a supporter_group Table.
 //SupporterGroups is a shortcut for creating a supporter_group Table.
 func (a *API) SupporterGroups() Table {
 	return a.NewTable("supporter_groups")
