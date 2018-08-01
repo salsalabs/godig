@@ -60,13 +60,21 @@ func (a *API) Groups() Table {
 	return a.NewTable("groups")
 }
 
+//GroupsSupporters is a shortcut to join groups to supporters
+//via the supporter_groups table. Use LeftJoin to get
+//data for this object.
+func (a *API) GroupsSupporters() Table {
+	return a.NewTable("groups(groups_KEY)supporter_groups(supporter_KEY)supporter")
+}
+
 //Supporter is a shortcut for creating a supporter Table.
 func (a *API) Supporter() Table {
 	return a.NewTable("supporter")
 }
 
-//SupporterDonation is a shortcut for creating a Table that 
-//holds supporter and donation records.
+//SupporterDonation is a shortcut for creating a Table that
+//holds supporter and donation records.  Use LeftJoin to get
+//data for this object.
 func (a *API) SupporterDonation() Table {
 	return a.NewTable("supporter(supporter_KEY)donation")
 }

@@ -1,4 +1,3 @@
-//Groups contains tools to do analysis on Salsa groups and Supporters.
 package godig
 
 //Members is a list of supporter keys for a group.  It's a map to make it
@@ -9,9 +8,11 @@ type Members map[int]bool
 //group and forms the basis for set logic.
 type Census map[int]Members
 
-//A result is a collection of Census records indexed by two levels of groups
-//keys. They hold two-way permutations from a list of groups.
+//ResultInner contains a map of members for a result.
 type ResultInner map[int]Members
+
+//Result is a collection of Census records indexed by two levels of groups
+//keys. They hold two-way permutations from a list of groups.
 type Result map[int]ResultInner
 
 //Analyze shows the overlap for permutations of an inclusive godig.Census without
