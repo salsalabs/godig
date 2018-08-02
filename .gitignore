@@ -17,11 +17,14 @@
 *credentials*
 *.yaml
 
-# vendors directory
-vendor
 
-# log files
+# Log files.
 *.log
 
-# temporary directory.
+# Temporary directory.
 tmp
+
+# Login credentials.
+logins
+*.yaml
+
