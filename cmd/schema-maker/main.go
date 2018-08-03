@@ -4,7 +4,10 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"go/format"
 	"log"
 	"os"
 	"strings"
@@ -54,6 +57,19 @@ type {{.CapName}} struct {
 func capitalize(s string) string {
 	return strings.ToUpper(s[0:1]) + strings.ToLower(s[1:])
 }
+
+//name removes underbars and capitalizes names.  Leading and trailing
+//underbars are ignored.
+func goName(s string) string {
+	p := strings.Split(s, "_")
+	var x []string
+	for _, d := range p {
+		if len(d) > 0 {
+			x = append(x, capitalize(d))
+		}
+	}
+	return strings.Join(x, "")
+}
 func main() {
 	var (
 		login = kingpin.Flag("login", "YAML file with login credentials").Required().String()
@@ -84,19 +100,15 @@ func main() {
 		log.Fatalf("%v, %v\n", err, fn)
 	}
 
+	tableName := goName(*table)
 	source := Source{
 		Now:     time.Now().Format("2-Jan-2006 15:04:05"),
 		Package: *pkg,
 		Name:    *table,
-		CapName: capitalize(*table),
+		CapName: tableName,
 	}
 	for _, e := range a {
-		p := strings.Split(e.Name, "_")
-		var x []string
-		for _, d := range p {
-			x = append(x, capitalize(d))
-		}
-		cap := strings.Join(x, "")
+		cap := goName(e.Name)
 		ext := fmt.Sprintf("`json:\"%v\"`", e.Name)
 		entry := Entry{
 			Cap: cap,
@@ -109,8 +121,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := tmpl.Execute(f, source); err != nil {
+	var buf bytes.Buffer
+	w := bufio.NewWriter(&buf)
+	if err := tmpl.Execute(w, source); err != nil {
 		panic(err)
 	}
+	//"Don't forget to flush"...
+	w.Flush()
+
+	b, err := format.Source(buf.Bytes())
+	if err != nil {
+		panic(err)
+	}
+	f.Write(b)
 	fmt.Printf("Schema for %v is in %v\n", *table, fn)
 }
