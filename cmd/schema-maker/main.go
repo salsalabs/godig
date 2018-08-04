@@ -29,8 +29,9 @@ type Item struct {
 
 //Entry is the stuff that we need to format Go object elements.
 type Entry struct {
-	Cap string
-	Ext string
+	Cap  string
+	Ext  string
+	Type string
 }
 
 //Source is the source object used to format the Go file.
@@ -49,7 +50,7 @@ package {{.Package}}
 //Created {{.Now}} by schema-maker (github.com/salsalabs/godig/cmd/schema-maker/main.go)
 type {{.CapName}} struct {
 	{{range $i := .Entries -}}
-	{{$i.Cap}} string {{$i.Ext}}
+	{{$i.Cap}} {{$i.Type}} {{$i.Ext}}
 	{{end}}
 }
 `
@@ -110,13 +111,19 @@ func main() {
 	for _, e := range a {
 		cap := goName(e.Name)
 		ext := fmt.Sprintf("`json:\"%v\"`", e.Name)
+		t := "string"
+		switch e.Type {
+		case "timestamp":
+			t = "*SalsaTimestamp"
+		}
 		entry := Entry{
-			Cap: cap,
-			Ext: ext,
+			Cap:  cap,
+			Ext:  ext,
+			Type: t,
 		}
 		source.Entries = append(source.Entries, entry)
-	}
 
+	}
 	tmpl, err := template.New("test").Parse(pattern)
 	if err != nil {
 		panic(err)
