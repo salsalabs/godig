@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
 
@@ -189,6 +190,22 @@ func (t *Table) ManyBig(offset int32, count int, crit string, target interface{}
 		}
 	}
 	return err
+}
+
+//ManyMap reads many records via the API and returns a FieldList. Many reads the URL,
+/// applies the criteria, then fetches the data.  An empty field list is end of data.
+//
+//  Note that Salsa only allows 500 records when reading via the API.
+//The read returns up to "count" or 500 records, whichever is
+// smaller.  End of data is when number of records is zero. The target is populated
+// with an array of records.  An empty target means that no more data is available.
+func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err error) {
+	body, err := t.ManyRawBig(offset, count, crit)
+	if err != nil {
+		return f, err
+	}
+	f = gjson.ParseBytes(body).Array()
+	return f, err
 }
 
 //ManyRaw reads many records via the API and returns a buffer.
