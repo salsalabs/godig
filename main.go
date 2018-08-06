@@ -2,6 +2,8 @@ package godig
 
 import (
 	"net/http"
+
+	"github.com/tidwall/gjson"
 )
 
 //API hold the data that we need to do Salsa API calls.  That includes
@@ -30,6 +32,9 @@ type CredData struct {
 	Email    string
 	Password string
 }
+
+//MapList is a slice of FieldMaps.
+type MapList []gjson.Result
 
 //NewAPI initializes and returns an API object.
 func NewAPI() *API {
