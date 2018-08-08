@@ -1,6 +1,4 @@
-//An application to accept a table and and create a Go file containing
-//a table schema.  The table schema can be used to retrieve data from
-//Salsa for the table.
+// A demo of JGson created a map of supporter records.
 package main
 
 import (
@@ -8,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/salsalabs/godig"
 	"github.com/tidwall/gjson"
@@ -46,12 +46,37 @@ func main() {
 	for _, m := range f {
 		var record []string
 		var h []string
-		log.Printf("\n")
 		m.ForEach(func(key, value gjson.Result) bool {
-			if len(headers) == 0 {
-				h = append(h, key.String())
+			m, err := regexp.MatchString("PRIVATE", key.String())
+			if err != nil {
+				panic(err)
 			}
-			record = append(record, value.String())
+			if !m {
+				if len(headers) == 0 {
+					h = append(h, key.String())
+				}
+				v := value.String()
+				m, err := regexp.MatchString("Date", key.String())
+				fmt.Printf("%v matches? %v\n", key.String(), m)
+				if err != nil {
+					panic(err)
+				}
+				if key.String() == "Last_Modified" || m {
+					ts := godig.SalsaTimestamp{}
+					ct := &ts
+					err := ct.UnmarshalJSON([]byte(value.String()))
+					if err != nil {
+						panic(err)
+					}
+					b, err := ct.MarshalJSON()
+					if err != nil {
+						panic(err)
+					}
+					v = string(b)
+				}
+				v = strings.TrimSpace(v)
+				record = append(record, v)
+			}
 			return true // keep iterating
 		})
 		records = append(records, record)

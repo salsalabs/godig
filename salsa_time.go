@@ -17,6 +17,7 @@ type SalsaTimestamp struct {
 
 //               "Wed Aug 01 2018 11:30:51 GMT-0400 (EDT)"
 const ctLayout = "Mon Jan 2 2006 15:04:05 (MST)"
+const fmtLayout = "2006-Jan-02 15:04:05"
 
 //UnmarshalJSON parses a byte slice in Salsa format and stores a time object.
 func (ct *SalsaTimestamp) UnmarshalJSON(b []byte) (err error) {
@@ -45,7 +46,7 @@ func (ct *SalsaTimestamp) MarshalJSON() ([]byte, error) {
 	if ct.Time.UnixNano() == nilTime {
 		return []byte("null"), nil
 	}
-	return []byte(fmt.Sprintf("\"%s\"", ct.Time.Format(ctLayout))), nil
+	return []byte(fmt.Sprintf("%s", ct.Time.Format(fmtLayout))), nil
 }
 
 var nilTime = (time.Time{}).UnixNano()
