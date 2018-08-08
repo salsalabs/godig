@@ -6,10 +6,11 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -20,11 +21,10 @@ import (
 
 //Item is a single description item from describe2.sjs.
 type Item struct {
-	Name         string
-	Nullable     string
-	Type         string
-	DefaultValue string
-	Label        string
+	Name     string
+	Nullable string
+	Type     string
+	Label    string
 }
 
 //Entry is the stuff that we need to format Go object elements.
@@ -62,6 +62,11 @@ func capitalize(s string) string {
 //name removes underbars and capitalizes names.  Leading and trailing
 //underbars are ignored.
 func goName(s string) string {
+	s = strings.TrimSpace(s)
+	m, _ := regexp.MatchString("^[\\d_]", s)
+	if m {
+		s = "F" + s
+	}
 	p := strings.Split(s, "_")
 	var x []string
 	for _, d := range p {
@@ -89,18 +94,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
-	//b, err := json.MarshalIndent(a, "", "\t")
-	//if err != nil {
-	//	log.Fatalf("%v\n", err)
-	//}
-	//fmt.Println(string(b))
-
+	b, err := json.MarshalIndent(a, "", "\t")
+	fmt.Printf("\v\n", string(b))
 	fn := fmt.Sprintf("%v.go", *table)
 	f, err := os.Create(fn)
 	if err != nil {
 		log.Fatalf("%v, %v\n", err, fn)
 	}
 
+	cache := make(map[string]int)
 	tableName := goName(*table)
 	source := Source{
 		Now:     time.Now().Format("2-Jan-2006 15:04:05"),
@@ -110,19 +112,54 @@ func main() {
 	}
 	for _, e := range a {
 		cap := goName(e.Name)
-		ext := fmt.Sprintf("`json:\"%v\"`", e.Name)
-		t := "string"
-		switch e.Type {
-		case "timestamp":
-			t = "*SalsaTimestamp"
+		// Go likes "UID" and "ID".
+		if cap == "Uid" {
+			cap = "UID"
 		}
-		entry := Entry{
-			Cap:  cap,
-			Ext:  ext,
-			Type: t,
+		m, _ := regexp.MatchString("Id$", cap)
+		if m {
+			cap = strings.Replace(cap, "Id", "ID", -1)
 		}
-		source.Entries = append(source.Entries, entry)
 
+		//Remove duplicate API Names.
+		_, ok := cache[cap]
+		if !ok {
+			cache[cap] = 1
+			ext := fmt.Sprintf("`json:\"%v\"`", e.Name)
+			t := e.Type
+			switch e.Type {
+			case "blob":
+				t = "string"
+			case "bool":
+				t = "bool"
+			case "currency":
+				t = "float32"
+			case "datetime":
+				t = "string"
+			case "enum":
+				t = "string"
+			case "float":
+				t = "float32"
+			case "int":
+				t = "int32"
+			case "text":
+				t = "string"
+			case "time":
+				t = "string"
+			case "timestamp":
+				t = "*SalsaTimestamp"
+			case "tinyint":
+				t = "int32"
+			case "varchar":
+				t = "string"
+			}
+			entry := Entry{
+				Cap:  cap,
+				Ext:  ext,
+				Type: t,
+			}
+			source.Entries = append(source.Entries, entry)
+		}
 	}
 	tmpl, err := template.New("test").Parse(pattern)
 	if err != nil {
@@ -136,10 +173,6 @@ func main() {
 	//"Don't forget to flush"...
 	w.Flush()
 
-	b, err := format.Source(buf.Bytes())
-	if err != nil {
-		panic(err)
-	}
-	f.Write(b)
+	f.Write(buf.Bytes())
 	fmt.Printf("Schema for %v is in %v\n", *table, fn)
 }
