@@ -120,33 +120,7 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 //LeftJoin converts data to JSON into the target.  The target should be
 //a slice of a record type.  The record type defines which fields to
 //return.
-func (t *Table) LeftJoin(offset int, count int, crit string, target interface{}) error {
-	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
-	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
-	if len(crit) != 0 {
-		x = x + "&condition=" + crit
-	}
-	_, body, err := t.Get(x)
-	if err == nil {
-		err = json.Unmarshal(body, &target)
-	}
-	return err
-}
-
-//LeftJoinBig reads two or more tables from the database.  The tables are
-//joined on the primary key of the left table.  For example, to find supporters
-//and their donations would require a table join statement like
-//'supporter(supporter_KEY)donation'.  The field supporter_KEY is the
-//primary key in supporter and a foreign key in donation.
-//
-//LeftJoin reads staring at offset.  It will retrieve either count
-//or 500 records, whichever is smaller.  If crit is defined, then that
-//is added to the URL as a condition to limit the number of supporters.
-//
-//LeftJoin converts data to JSON into the target.  The target should be
-//a slice of a record type.  The record type defines which fields to
-//return.
-func (t *Table) LeftJoinBig(offset int32, count int, crit string, target interface{}) error {
+func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{}) error {
 	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
 	if len(crit) != 0 {
@@ -160,29 +134,14 @@ func (t *Table) LeftJoinBig(offset int32, count int, crit string, target interfa
 }
 
 //Many reads many records via the API. Many reads the URL, applies the criteria if
-// it's not empty.  The read returns up to "count" or 500 records, whichever is
-// smaller.  End of data is when number of records is zero. The target is populated
-// with an array of records.  An empty target means that no more data is available.
-func (t *Table) Many(offset int, count int, crit string, target interface{}) error {
-	body, err := t.ManyRaw(offset, count, crit)
-	if err == nil {
-		err = json.Unmarshal(body, &target)
-		if err != nil {
-			log.Printf("\nAPI.Many: Error %s\n offset: %v\ncount: %v\n,crit: '%v'\nbody: \n%v\n\n", err, offset, count, crit, string(body))
-		}
-	}
-	return err
-}
-
-//ManyBig reads many records via the API. Many reads the URL, applies the criteria if
 // it's not empty.  The offiset is a 32-bin integer.  The count is a small integer because
 // Salsa only allows 500 records when reading via the API.
 //
 //The read returns up to "count" or 500 records, whichever is
 // smaller.  End of data is when number of records is zero. The target is populated
 // with an array of records.  An empty target means that no more data is available.
-func (t *Table) ManyBig(offset int32, count int, crit string, target interface{}) error {
-	body, err := t.ManyRawBig(offset, count, crit)
+func (t *Table) Many(offset int32, count int, crit string, target interface{}) error {
+	body, err := t.ManyRaw(offset, count, crit)
 	if err == nil {
 		err = json.Unmarshal(body, &target)
 		if err != nil {
@@ -200,7 +159,7 @@ func (t *Table) ManyBig(offset int32, count int, crit string, target interface{}
 // smaller.  End of data is when number of records is zero. The target is populated
 // with an array of records.  An empty target means that no more data is available.
 func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err error) {
-	body, err := t.ManyRawBig(offset, count, crit)
+	body, err := t.ManyRaw(offset, count, crit)
 	if err != nil {
 		return f, err
 	}
@@ -209,27 +168,15 @@ func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err er
 }
 
 //ManyRaw reads many records via the API and returns a buffer.
-func (t *Table) ManyRaw(offset int, count int, crit string) ([]byte, error) {
-	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
-	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
-	if len(crit) != 0 {
-		x = x + "&condition=" + crit
-	}
-	// fmt.Printf("Many reading %v\n", x)
-	_, body, err := t.Get(x)
-	return body, err
-}
-
-//ManyRawBig reads many records via the API and returns a buffer.
 //offset is a 32-bin integer.  Count can be an int because we can't
 //read more than 500 records from Salsa via the API.
-func (t *Table) ManyRawBig(offset int32, count int, crit string) ([]byte, error) {
+func (t *Table) ManyRaw(offset int32, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
 	if len(crit) != 0 {
 		x = x + "&condition=" + crit
 	}
-	//fmt.Printf("ManyRawBig: %v\n", x)
+	//fmt.Printf("ManyRaw: %v\n", x)
 	_, body, err := t.Get(x)
 	return body, err
 }
