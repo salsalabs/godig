@@ -50,11 +50,10 @@ func (t *Table) Count(c string) (string, error) {
 	return string(body), err
 }
 
-//Credentials retrieves the login credentials from a yaml credentials file
-// in the current directory.
-func Credentials(cpath string) (CredData, error) {
-	raw, err := ioutil.ReadFile(cpath)
+//Credentials retrieves the login credentials from a YAML login file.
+func Credentials(p string) (CredData, error) {
 	var c CredData
+	raw, err := ioutil.ReadFile(p)
 	if err == nil {
 		err = yaml.Unmarshal(raw, &c)
 	}
@@ -117,9 +116,9 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 //or 500 records, whichever is smaller.  If crit is defined, then that
 //is added to the URL as a condition to limit the number of supporters.
 //
-//LeftJoin converts data to JSON into the target.  The target should be
-//a slice of a record type.  The record type defines which fields to
-//return.
+//The target is a slice of schemas.  The schemas contain the fields that
+//you'd like to see.  Be sure to use the form "table.fieldName" in the
+//JSON extensions to assure that the data is retrieved correctly.
 func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{}) error {
 	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
@@ -133,31 +132,24 @@ func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{
 	return err
 }
 
-//Many reads many records via the API. Many reads the URL, applies the criteria if
-// it's not empty.  The offiset is a 32-bin integer.  The count is a small integer because
-// Salsa only allows 500 records when reading via the API.
-//
-//The read returns up to "count" or 500 records, whichever is
-// smaller.  End of data is when number of records is zero. The target is populated
-// with an array of records.  An empty target means that no more data is available.
+//Many reads many records from a table. Reading starts and offset and retrieves count
+//records.   Salsa will never return more than 500 records, however.
+
+//The target is a slice of records that match the table schema. Many automatically
+//unmarshals from JSON into the target.  An empty target indicates end of data.
 func (t *Table) Many(offset int32, count int, crit string, target interface{}) error {
 	body, err := t.ManyRaw(offset, count, crit)
 	if err == nil {
 		err = json.Unmarshal(body, &target)
-		if err != nil {
-			log.Printf("\nAPI.Many: Error %s\n offset: %v\ncount: %v\n,crit: '%v'\nbody: \n%v\n\n", err, offset, count, crit, string(body))
-		}
 	}
 	return err
 }
 
-//ManyMap reads many records via the API and returns a FieldList. Many reads the URL,
-/// applies the criteria, then fetches the data.  An empty field list is end of data.
-//
-//  Note that Salsa only allows 500 records when reading via the API.
-//The read returns up to "count" or 500 records, whichever is
-// smaller.  End of data is when number of records is zero. The target is populated
-// with an array of records.  An empty target means that no more data is available.
+//ManyMap reads many records from a table. Reading starts and offset and retrieves count
+//records.   Salsa will never return more than 500 records, however.
+
+//ManyMap returns an array of records.  Each record is a a map of field names and values.
+//And empty array indicates end of data.
 func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err error) {
 	body, err := t.ManyRaw(offset, count, crit)
 	if err != nil {
@@ -167,28 +159,24 @@ func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err er
 	return f, err
 }
 
-//ManyRaw reads many records via the API and returns a buffer.
-//offset is a 32-bin integer.  Count can be an int because we can't
-//read more than 500 records from Salsa via the API.
+//ManyRaw reads many records from a table. Reading starts and offset and retrieves count
+//records.   Salsa will never return more than 500 records, however.
+//
+//ManyRaw returns a buffer and does not unmarshal the data.
 func (t *Table) ManyRaw(offset int32, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
 	if len(crit) != 0 {
 		x = x + "&condition=" + crit
 	}
-	//fmt.Printf("ManyRaw: %v\n", x)
 	_, body, err := t.Get(x)
 	return body, err
 }
 
-//One retrieves a single record using the provided primary key.  The "target"
-//is expected to be a struct that defines which fields should be extracted.
-//The record will be retrieved into "target".  You can use a Go trick to find
-//out if the record number was accurate.
-//
-//Note that there is not currently a way to retrieve all fields.
-//
-//TBD Determine how to retrieve all fields from a record.
+//One retrieves a single record using the provided primary key.  The target
+//is the address of a record schema, which defines which fields will
+//be returned.  Note that there is not currently a way to retrieve all fields
+//into a schema.  Use ManyMap to do that.
 func (t *Table) One(key string, target interface{}) error {
 	body, err := t.OneRaw(key)
 	if err == nil {
@@ -213,8 +201,10 @@ func (t *Table) OneRaw(key string) ([]byte, error) {
 }
 
 //Save does a Salsa API /save.  The caller provides a buffer of fields to
-//change.  That will go into the body of a POST request.  The buffer can
-//be inordinately long.  Salsa may not process a truly long buffer.  YMWV.
+//changed in the form "fieldname=value".
+//
+//The buffer can be inordinately long.  Salsa may not process a truly
+//long buffer.  YMWV.
 func (t *Table) Save(key string, s string) ([]byte, error) {
 	p := fmt.Sprintf("&object=%s&key=%s&%s", t.Name, key, s)
 	return t.SaveBulk(p)
