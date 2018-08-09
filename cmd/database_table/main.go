@@ -22,7 +22,7 @@ func main() {
 	dt := api.NewTable("database_table")
 	var a []godig.DatabaseTable
 	crit := fmt.Sprintf("table_name=%v\n", *table)
-	err = dt.ManyBig(int32(0), 500, crit, &a)
+	err = dt.Many(int32(0), 500, crit, &a)
 	if err != nil {
 		panic(err)
 	}
