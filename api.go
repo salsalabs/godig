@@ -13,11 +13,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//Replace spaces and percent signs in the criteria so
-//that Saosa consumes them correctly.
+//Replace spaces and percent signs in the criteria so that Saosa consumes them correctly.
 func fixCrit(c string) string {
-	c = strings.Replace(c, " ", "%20", -1)
 	c = strings.Replace(c, "%", "%25", -1)
+	c = strings.Replace(c, " ", "%20", -1)
 	return c
 }
 
