@@ -96,8 +96,6 @@ func (t *Table) Describe(target interface{}) error {
 //Get also adds the cookies that the API needs to prove authentication.
 //Your application would probably be better off using One or Many.
 func (a *API) Get(u string) (*http.Response, []byte, error) {
-	u = strings.Replace(u, "%", "%25", -1)
-	u = strings.Replace(u, " ", "%20", -1)
 	var body []byte
 	var resp *http.Response
 	req, err := http.NewRequest("GET", u, nil)
