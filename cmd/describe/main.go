@@ -18,7 +18,7 @@ type Fields struct {
 }
 
 func main() {
-	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+	cpath := kingpin.Flag("login", "YAML file containing login for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	table := kingpin.Flag("table", "show description for this table").PlaceHolder("TABLE").String()
 	kingpin.Parse()
 
