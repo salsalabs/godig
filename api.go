@@ -152,10 +152,7 @@ func (t *Table) Many(offset int32, count int, crit string, target interface{}) e
 	return err
 }
 
-//ManyMap reads many records from a table. Reading starts and offset and retrieves count
-//records.   Salsa will never return more than 500 records, however.
-
-//ManyMap returns an array of records.  Each record is a a map of field names and values.
+//ManyMap returns an array of records.  Each record is a a gjson map of field names and values.
 //And empty array indicates end of data.
 func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err error) {
 	body, err := t.ManyRaw(offset, count, crit)
@@ -164,6 +161,26 @@ func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err er
 	}
 	f = gjson.ParseBytes(body).Array()
 	return f, err
+}
+
+//ManyMap2 returns an array of records.  Each record is a map of field names and values.
+//And empty array indicates end of data.
+func (t *Table) ManyMap2(offset int32, count int, crit string) ([]map[string]string, error) {
+	var a []map[string]string
+	body, err := t.ManyRaw(offset, count, crit)
+	if err != nil {
+		return a, err
+	}
+	f := gjson.ParseBytes(body).Array()
+	for _, r := range f {
+		b := make(map[string]string)
+		r.ForEach(func(key, value gjson.Result) bool {
+			b[key.String()] = value.String()
+			return true
+		})
+		a = append(a, b)
+	}
+	return a, nil
 }
 
 //ManyRaw reads many records from a table. Reading starts and offset and retrieves count
