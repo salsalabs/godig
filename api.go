@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
 
-//Replace spaces and percent signs in the criteria so that Saosa consumes them correctly.
-func fixCrit(c string) string {
+//FixCrit Replace spaces and percent signs in the criteria so that Saosa
+//consumes them correctly.
+func FixCrit(c string) string {
 	c = strings.Replace(c, "%", "%25", -1)
 	c = strings.Replace(c, " ", "%20", -1)
 	return c
@@ -49,7 +49,7 @@ func (t *Table) Count(c string) (string, error) {
 	p := "https://%s/api/getCount.sjs?json&object=%s&countColumn=%s_KEY"
 	x := fmt.Sprintf(p, t.Host, t.Name, t.Name)
 	if len(c) != 0 {
-		x = x + "&condition=" + fixCrit(c)
+		x = x + "&condition=" + FixCrit(c)
 	}
 	_, body, err := t.Get(x)
 	//The API does not return valid JSON for getCount.sjs.
@@ -113,6 +113,17 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 	return resp, body, err
 }
 
+//LeftJoinRaw does a left join using Salsa's API and returns a buffer of bytes.
+func (t *Table) LeftJoinRaw(offset int32, count int, crit string) ([]byte, error) {
+	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
+	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
+	if len(crit) != 0 {
+		x = x + "&condition=" + FixCrit(crit)
+	}
+	_, body, err := t.Get(x)
+	return body, err
+}
+
 //LeftJoin reads two or more tables from the database.  The tables are
 //joined on the primary key of the left table.  For example, to find supporters
 //and their donations would require a table join statement like
@@ -127,12 +138,7 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 //you'd like to see.  Be sure to use the form "table.fieldName" in the
 //JSON extensions to assure that the data is retrieved correctly.
 func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{}) error {
-	p := "https://%s/api/getLeftJoin.sjs?json&object=%s&limit=%d,%d"
-	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
-	if len(crit) != 0 {
-		x = x + "&condition=" + fixCrit(crit)
-	}
-	_, body, err := t.Get(x)
+	body, err := t.LeftJoinRaw(offset, count, crit)
 	if err == nil {
 		err = json.Unmarshal(body, &target)
 	}
@@ -152,37 +158,6 @@ func (t *Table) Many(offset int32, count int, crit string, target interface{}) e
 	return err
 }
 
-//ManyMap returns an array of records.  Each record is a a gjson map of field names and values.
-//And empty array indicates end of data.
-func (t *Table) ManyMap(offset int32, count int, crit string) (f MapList, err error) {
-	body, err := t.ManyRaw(offset, count, crit)
-	if err != nil {
-		return f, err
-	}
-	f = gjson.ParseBytes(body).Array()
-	return f, err
-}
-
-//ManyMap2 returns an array of records.  Each record is a map of field names and values.
-//And empty array indicates end of data.
-func (t *Table) ManyMap2(offset int32, count int, crit string) ([]map[string]string, error) {
-	var a []map[string]string
-	body, err := t.ManyRaw(offset, count, crit)
-	if err != nil {
-		return a, err
-	}
-	f := gjson.ParseBytes(body).Array()
-	for _, r := range f {
-		b := make(map[string]string)
-		r.ForEach(func(key, value gjson.Result) bool {
-			b[key.String()] = value.String()
-			return true
-		})
-		a = append(a, b)
-	}
-	return a, nil
-}
-
 //ManyRaw reads many records from a table. Reading starts and offset and retrieves count
 //records.   Salsa will never return more than 500 records, however.
 //
@@ -191,7 +166,7 @@ func (t *Table) ManyRaw(offset int32, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)
 	if len(crit) != 0 {
-		x = x + "&condition=" + fixCrit(crit)
+		x = x + "&condition=" + FixCrit(crit)
 	}
 	_, body, err := t.Get(x)
 	return body, err
