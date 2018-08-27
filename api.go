@@ -147,7 +147,6 @@ func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{
 
 //Many reads many records from a table. Reading starts and offset and retrieves count
 //records.   Salsa will never return more than 500 records, however.
-
 //The target is a slice of records that match the table schema. Many automatically
 //unmarshals from JSON into the target.  An empty target indicates end of data.
 func (t *Table) Many(offset int32, count int, crit string, target interface{}) error {
