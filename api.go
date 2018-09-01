@@ -98,6 +98,9 @@ func (t *Table) Describe(target interface{}) error {
 func (a *API) Get(u string) (*http.Response, []byte, error) {
 	var body []byte
 	var resp *http.Response
+	if a.Verbose {
+		fmt.Printf("Get: %v\n", u)
+	}
 	req, err := http.NewRequest("GET", u, nil)
 	if err == nil {
 		// Salsa's API needs these cookies to verify authentication.

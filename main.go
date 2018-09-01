@@ -12,6 +12,7 @@ type API struct {
 	Client  *http.Client
 	Cookies []*http.Cookie
 	Host    string
+	Verbose bool
 }
 
 //Table links an API to a Salsa API object.
