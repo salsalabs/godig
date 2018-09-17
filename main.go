@@ -60,6 +60,11 @@ func (a *API) Donation() Table {
 	return a.NewTable("donation")
 }
 
+//EmailBlast is a shortcut for creating a donation Table.
+func (a *API) EmailBlast() Table {
+	return a.NewTable("email_blast")
+}
+
 //Groups is a shorcut for creating a groups Table.  Note that
 //"groups" is the only table in the API that's plural.
 func (a *API) Groups() Table {
