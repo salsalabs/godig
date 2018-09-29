@@ -111,6 +111,9 @@ func (a *API) Get(u string) (*http.Response, []byte, error) {
 		if err == nil {
 			defer resp.Body.Close()
 			body, err = ioutil.ReadAll(resp.Body)
+			if a.Verbose {
+				fmt.Printf("Get: %v\n", string(body))
+			}
 		}
 	}
 	return resp, body, err
