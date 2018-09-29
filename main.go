@@ -50,11 +50,6 @@ func (a *API) NewTable(n string) Table {
 	return t
 }
 
-//Blast is a shortcut for creating an email_blast Table.
-func (a *API) Blast() Table {
-	return a.NewTable("email_blast")
-}
-
 //Donation is a shortcut for creating a donation Table.
 func (a *API) Donation() Table {
 	return a.NewTable("donation")
@@ -81,10 +76,6 @@ func (a *API) GroupsSupporters() Table {
 //Supporter is a shortcut for creating a supporter Table.
 func (a *API) Supporter() Table {
 	return a.NewTable("supporter")
-}
-//EmailBlast is a shortcut for creating a supporter Table.
-func (a *API) EmailBlast() Table {
-	return a.NewTable("email_blast")
 }
 
 //SupporterDonation is a shortcut for creating a Table that
