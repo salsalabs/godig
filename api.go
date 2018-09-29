@@ -243,7 +243,7 @@ func (t *Table) SaveBulk(s string) ([]byte, error) {
 		body, err = ioutil.ReadAll(resp.Body)
 	}
 
-	return body, nil
+	return body, err
 }
 
 //YAMLAuth accepts campaign manager credentials (email, password, host)
