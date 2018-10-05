@@ -151,8 +151,8 @@ func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{
 	return err
 }
 
-//Many reads many records from a table. Reading starts and offset and retrieves count
-//records.   Salsa will never return more than 500 records, however.
+//Many reads many records from a table. Reading starts at offset and retrieves
+//count records.   Salsa will never return more than 500 records, however.
 //The target is a slice of records that match the table schema. Many automatically
 //unmarshals from JSON into the target.  An empty target indicates end of data.
 func (t *Table) Many(offset int32, count int, crit string, target interface{}) error {
@@ -163,10 +163,36 @@ func (t *Table) Many(offset int32, count int, crit string, target interface{}) e
 	return err
 }
 
-//ManyRaw reads many records from a table. Reading starts and offset and retrieves count
-//records.   Salsa will never return more than 500 records, however.
+//ManyTagged reads many records from a table. Records share a common tag.
+// Reading starts at offset and retrieves count records.   Salsa will never
+// return more than 500 records, however.
 //
-//ManyRaw returns a buffer and does not unmarshal the data.
+//The target is a slice of records that match the table schema. Many automatically
+//unmarshals from JSON into the target.  An empty target indicates end of data.
+func (t *Table) ManyTagged(offset int32, count int, crit string, tag string, target interface{}) error {
+	body, err := t.ManyRawTagged(offset, count, crit, tag)
+	if err == nil {
+		err = json.Unmarshal(body, &target)
+	}
+	return err
+}
+
+//ManyRawTagged reads many records from a table. Records share a common tag.
+// Reading starts at offset and retrieves count records. Salsa will never
+// return more than 500 records, however.
+func (t *Table) ManyRawTagged(offset int32, count int, crit string, tag string) ([]byte, error) {
+	p := "https://%s/api/getTaggedObjects.sjs?json&object=%s&tag=%s&limit=%d,%d"
+	x := fmt.Sprintf(p, t.Host, t.Name, tag, offset, count)
+	if len(crit) != 0 {
+		x = x + "&condition=" + FixCrit(crit)
+	}
+	_, body, err := t.Get(x)
+	return body, err
+}
+
+//ManyRaw reads many records from a table. Reading starts at offset and
+//retrieves count records.   Salsa will never return more than 500 records,
+//however.  The results are unmarshalled data in JSON format.
 func (t *Table) ManyRaw(offset int32, count int, crit string) ([]byte, error) {
 	p := "https://%s/api/getObjects.sjs?json&object=%s&limit=%d,%d"
 	x := fmt.Sprintf(p, t.Host, t.Name, offset, count)

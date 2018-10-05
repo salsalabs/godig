@@ -1,4 +1,5 @@
 package godig
+
 import (
 	"github.com/tidwall/gjson"
 )
@@ -21,6 +22,18 @@ func (t *Table) OneMap(key string) (map[string]string, error) {
 func (t *Table) ManyMap(offset int32, count int, crit string) ([]map[string]string, error) {
 	var a []map[string]string
 	body, err := t.ManyRaw(offset, count, crit)
+	if err != nil {
+		return a, err
+	}
+	a = unpackGJsonArray(body)
+	return a, nil
+}
+
+//ManyMapTagged returns an array of records that have a common tag.  Each
+// record is a map of field names and values. An empty array indicates end of data.
+func (t *Table) ManyMapTagged(offset int32, count int, crit string, tag string) ([]map[string]string, error) {
+	var a []map[string]string
+	body, err := t.ManyRawTagged(offset, count, crit, tag)
 	if err != nil {
 		return a, err
 	}
