@@ -34,6 +34,16 @@ type CredData struct {
 	Password string
 }
 
+//Fields are the fields returned when calling Describe.
+//Describe returns an array of Fields.
+type Fields struct {
+	Name         string
+	Nullable     string
+	Type         string
+	DefaultValue string `json:"defaultValue"`
+	Label        string
+}
+
 //MapList is a slice of FieldMaps.
 type MapList []gjson.Result
 

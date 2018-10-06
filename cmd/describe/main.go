@@ -8,15 +8,6 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-//Fields are the fields returned for each database field.
-type Fields struct {
-	Name         string
-	Nullable     string
-	Type         string
-	DefaultValue string `json:"defaultValue"`
-	Label        string
-}
-
 func main() {
 	cpath := kingpin.Flag("login", "YAML file containing login for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	table := kingpin.Flag("table", "show description for this table").PlaceHolder("TABLE").String()
@@ -28,7 +19,7 @@ func main() {
 	}
 
 	t := a.NewTable(*table)
-	var target []Fields
+	var target []godig.Fields
 	err = t.Describe(&target)
 	if err != nil {
 		log.Fatalf("Describe %v on %v\n", err, *table)
