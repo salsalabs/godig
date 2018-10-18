@@ -33,7 +33,7 @@ type Fields struct {
 //All reads all of the records and sends them to a Fields channel.
 //parses the buffer for records then outputs them to cout.
 func All(t *godig.Table, crit string, cout chan Fields) {
-	offset := 0
+	offset := int32(0)
 	count := 500
 	for count > 0 {
 		log.Printf("All: offset %6d\n", offset)
@@ -56,7 +56,7 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 		for _, r := range a {
 			cout <- r
 		}
-		offset = offset + count
+		offset = offset + int32(count)
 	}
 }
 
