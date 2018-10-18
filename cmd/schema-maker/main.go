@@ -6,7 +6,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -94,8 +93,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
-	b, err := json.MarshalIndent(a, "", "\t")
-	fmt.Printf("\v\n", string(b))
 	fn := fmt.Sprintf("%v.go", *table)
 	f, err := os.Create(fn)
 	if err != nil {
@@ -142,12 +139,18 @@ func main() {
 				t = "float32"
 			case "int":
 				t = "int32"
+			case "mediumtext":
+				t = "string"
 			case "text":
 				t = "string"
 			case "time":
 				t = "string"
 			case "timestamp":
-				t = "*SalsaTimestamp"
+				if *pkg == "godig" {
+					t = "SalsaTimestamp"
+				} else {
+					t = "*godig.SalsaTimestamp"
+				}
 			case "tinyint":
 				t = "int32"
 			case "varchar":
