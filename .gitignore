@@ -28,3 +28,5 @@ tmp
 logins
 *.yaml
 
+# Internal stuff that's not shared.
+cmd/scrub_templates
