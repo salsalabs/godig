@@ -161,7 +161,6 @@ func (t *Table) LeftJoin(offset int32, count int, crit string, target interface{
 //The target is a slice of records that match the table schema. Many automatically
 //unmarshals from JSON into the target.  An empty target indicates end of data.
 func (t *Table) Many(offset int32, count int, crit string, target interface{}) error {
-	fmt.Printf("Many: offset %v, count %v, crit %v\n", offset, count, crit)
 	body, err := t.ManyRaw(offset, count, crit)
 	if err == nil {
 		err = json.Unmarshal(body, &target)
