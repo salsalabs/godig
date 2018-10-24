@@ -115,7 +115,7 @@ func (e *env) store(c chan email) error {
 			err = errors.New(m)
 			return err
 		}
-		sk, _ := strconv.ParseInt(r.SupporterKEY, 10, 32)
+		sk, _ := strconv.ParseInt(r.SupporterKey, 10, 32)
 		_, err = e.Insert.Exec(y, sk, r.Status)
 		if err != nil {
 			return err
