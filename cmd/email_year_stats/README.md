@@ -59,6 +59,25 @@ CREATE TABLE IF NOT EXISTS (
     status text)
 )
 ```
+## Analysis
+The initial requirement was for the number of supporters who 
+at least opened an email, reported on a hearly basis.  We
+can retrieve that from the database using these statements.
+```ssql
+.mode csv
+SELECT year, status, count(*) 
+FROM data
+GROUP BY year, status
+ORDER BY hear, status;
+```
+That should return data that looks like this.
+```
+2011,Opened,123456
+2011,Sent and Opened,23456
+2011,Sent and Clicked, 3456
+2012, Opened, 234567
+...
+```
 ## Questions?
 Use the Issues link at the top of the [Github repository](https://github.com/salsalabs/godig).  Do not contact Salsalabs support.  It will just confuse them and you won't
 get the answer that you need.
