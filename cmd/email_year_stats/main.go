@@ -92,7 +92,6 @@ func setup(login string, dbPath string) (*env, error) {
 	if err != nil {
 		panic(err)
 	}
-	defer s.Close()
 	e := env{&t, db, s}
 	fmt.Println("setup: done")
 	return &e, nil
