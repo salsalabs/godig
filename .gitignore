@@ -33,4 +33,4 @@ cmd/scrub_templates
 
 # Temporary databases.
 *.sqlite3
-
+*.sqlite3-journal
