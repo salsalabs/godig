@@ -17,9 +17,11 @@ import (
 
 //env is the internal runtime environment.
 type env struct {
+	C      chan email
 	T      *godig.Table
 	DB     *sql.DB
 	Insert *sql.Stmt
+	Offset int32
 }
 
 //email is what Salsa records for each email.
@@ -36,9 +38,9 @@ type email struct {
 }
 
 //push reads emails and pumps them to a channel for email records.
-func (e *env) push(c chan email) error {
+func (e *env) push() error {
 	fmt.Println("push: start")
-	offset := int32(0)
+	offset := e.Offset
 	count := 500
 	for count > 0 {
 		var a []email
@@ -48,20 +50,20 @@ func (e *env) push(c chan email) error {
 		}
 		count = len(a)
 		for _, r := range a {
-			c <- r
+			e.C <- r
 		}
 		offset += int32(count)
 		if offset%5000 == 0 {
 			fmt.Printf("push: offset %8d\n", offset)
 		}
 	}
-	close(c)
+	close(e.C)
 	fmt.Printf("push: done, offset is %v\n", offset)
 	return nil
 }
 
 //setup configures and return an env.
-func setup(login string, dbPath string) (*env, error) {
+func setup(login string, dbPath string, offset int32) (*env, error) {
 	fmt.Println("setup: start")
 	api, err := (godig.YAMLAuth(login))
 	if err != nil {
@@ -92,17 +94,18 @@ func setup(login string, dbPath string) (*env, error) {
 	if err != nil {
 		panic(err)
 	}
-	e := env{&t, db, s}
+	c := make(chan email)
+	e := env{c, &t, db, s, offset}
 	fmt.Println("setup: done")
 	return &e, nil
 }
 
 //store stores parts of an email record to the database.
-func (e *env) store(c chan email) error {
+func (e *env) store() error {
 	fmt.Println("store: start")
 	count := int32(0)
 	for {
-		r, ok := <-c
+		r, ok := <-e.C
 		if !ok {
 			break
 		}
@@ -129,23 +132,23 @@ func main() {
 	var (
 		login  = kingpin.Flag("login", "YAML file with login credentials").Required().String()
 		dbPath = kingpin.Flag("db", "SQLite database to use").Default("./data.sqlite3").String()
+		offset = kingpin.Flag("offset", "Start reading at this offset").Default("0").Int32()
 	)
 	kingpin.Parse()
 	if dbPath == nil || len(*dbPath) == 0 {
 		fmt.Printf("Oh come on. If you're going to screw with the parameters at least do it right!")
 		return
 	}
-	e, err := setup(*login, *dbPath)
+	e, err := setup(*login, *dbPath, *offset)
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
 
-	c := make(chan email)
 	var wg sync.WaitGroup
 
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
-		err := e.store(c)
+		err := e.store()
 		wg.Done()
 		if err != nil {
 			log.Fatalf("%v\n", err)
@@ -154,7 +157,7 @@ func main() {
 
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
-		err := e.push(c)
+		err := e.push()
 		wg.Done()
 		if err != nil {
 			log.Fatalf("%v\n", err)
