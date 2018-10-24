@@ -30,3 +30,7 @@ logins
 
 # Internal stuff that's not shared.
 cmd/scrub_templates
+
+# Temporary databases.
+*.sqlite3
+
