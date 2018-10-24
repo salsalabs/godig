@@ -17,7 +17,9 @@ import (
 
 //env is the internal runtime environment.
 type env struct {
+	N      chan int32
 	C      chan email
+	D      chan bool
 	T      *godig.Table
 	DB     *sql.DB
 	Insert *sql.Stmt
@@ -37,28 +39,47 @@ type email struct {
 	ThreadID      string `json:"thread_ID"`
 }
 
-//push reads emails and pumps them to a channel for email records.
-func (e *env) push() error {
-	fmt.Println("push: start")
-	offset := e.Offset
-	count := 500
-	for count > 0 {
+//Fetch retrieves offsets from the offset channel, reads records
+//from Salsa, then puts the records onto the save channel.
+func (e *env) fetch() error {
+	fmt.Println("fetch: start")
+	for {
+		offset, ok := <-e.N
+		if !ok {
+			e.D <- true
+			break
+		}
+		fmt.Printf("fetch: popped %8d\n", offset)
 		var a []email
-		err := e.T.Many(offset, count, "", &a)
+		err := e.T.Many(offset, 500, "", &a)
 		if err != nil {
 			return err
 		}
-		count = len(a)
 		for _, r := range a {
 			e.C <- r
 		}
-		offset += int32(count)
-		if offset%5000 == 0 {
-			fmt.Printf("push: offset %8d\n", offset)
-		}
 	}
-	close(e.C)
-	fmt.Printf("push: done, offset is %v\n", offset)
+	fmt.Println("fetch: done")
+	return nil
+}
+
+//push determines how many emails to process and pushes offsets
+//onto the offset channel.
+func (e *env) push() error {
+	fmt.Println("push: start")
+
+	s, err := e.T.Count("")
+	x, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		return err
+	}
+	max := int32(x)
+	fmt.Printf("push: max is %v\n", max)
+	for i := e.Offset; i <= max; i += 500 {
+		e.N <- i
+	}
+	close(e.N)
+	fmt.Println("push: done")
 	return nil
 }
 
@@ -94,8 +115,17 @@ func setup(login string, dbPath string, offset int32) (*env, error) {
 	if err != nil {
 		panic(err)
 	}
-	c := make(chan email)
-	e := env{c, &t, db, s, offset}
+	c := make(chan email, 100)
+	d := make(chan bool)
+	n := make(chan int32, 1000)
+	e := env{
+		N:      n,
+		C:      c,
+		D:      d,
+		T:      &t,
+		DB:     db,
+		Insert: s,
+		Offset: offset}
 	fmt.Println("setup: done")
 	return &e, nil
 }
@@ -128,6 +158,24 @@ func (e *env) store() error {
 	return nil
 }
 
+//waitFor watches the done channel for 'n' messages to arrive.  When the n-th
+//one arrives, then close save channel.
+func (e *env) waitFor(n int) {
+	fmt.Println("waitFor: start")
+	for {
+		_, ok := <-e.D
+		if !ok {
+			break
+		}
+		n--
+		if n == 0 {
+			break
+		}
+	}
+	close(e.C)
+	fmt.Println("waitFor: done")
+}
+
 func main() {
 	var (
 		login  = kingpin.Flag("login", "YAML file with login credentials").Required().String()
@@ -146,6 +194,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	// Read email records, write to the database.
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
 		err := e.store()
@@ -155,6 +204,19 @@ func main() {
 		}
 	})(e, &wg)
 
+	// Read offsets, push email records.
+	for i := 0; i < 6; i++ {
+		go (func(e *env, wg *sync.WaitGroup) {
+			wg.Add(1)
+			err := e.fetch()
+			wg.Done()
+			if err != nil {
+				log.Fatalf("%v\n", err)
+			}
+		})(e, &wg)
+	}
+
+	// Read number of emails, push offsets.
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
 		err := e.push()
@@ -164,6 +226,17 @@ func main() {
 		}
 	})(e, &wg)
 
+	// Wait for fetchers to terminate.
+	go (func(e *env, wg *sync.WaitGroup) {
+		wg.Add(1)
+		e.waitFor(5)
+		wg.Done()
+		if err != nil {
+			log.Fatalf("%v\n", err)
+		}
+	})(e, &wg)
+
+	// Settle, then wait for things to go.
 	time.Sleep(10000)
 	wg.Wait()
 }
