@@ -20,7 +20,7 @@ type Fields struct {
 //then records that match that criteria are returned.  Each read
 //parses the buffer for records then outputs them to cout.
 func All(t *godig.Table, crit string, cout chan Fields) {
-	offset := 0
+	offset := int32(0)
 	count := 500
 	for count > 0 {
 		log.Printf("All: %v offset %6d\n", t.Name, offset)
