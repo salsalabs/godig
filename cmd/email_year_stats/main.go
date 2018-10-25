@@ -214,7 +214,7 @@ func main() {
 	})(e, &wg)
 
 	// Read offsets, push email records.
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 5; i++ {
 		go (func(e *env, wg *sync.WaitGroup) {
 			wg.Add(1)
 			err := e.fetch()
@@ -245,7 +245,8 @@ func main() {
 		}
 	})(e, &wg)
 
-	// Settle, then wait for things to go.
+	// Settle for a bit to let Salsa I/O get started (it can
+	// take a while), then wait for tasks to complete.
 	time.Sleep(10000)
 	wg.Wait()
 }
