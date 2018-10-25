@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -84,14 +85,21 @@ func (e *env) push() error {
 }
 
 //setup configures and return an env.
-func setup(login string, dbPath string, offset int32) (*env, error) {
+func setup(login string, dbPath string, offset int32, mysql *bool) (*env, error) {
 	fmt.Println("setup: start")
 	api, err := (godig.YAMLAuth(login))
 	if err != nil {
 		return nil, err
 	}
 	t := api.NewTable("email")
-	db, err := sql.Open("sqlite3", dbPath)
+	var db *sql.DB
+	if mysql != nil && *mysql {
+		db, err = sql.Open("mysql", "generic:generic-at-loca@tcp(127.0.0.1:3306)/generic")
+		fmt.Println("setup: opened MySQL database")
+	} else {
+		db, err = sql.Open("sqlite3", dbPath)
+		fmt.Println("setup: opened SQLite database")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +189,14 @@ func main() {
 		login  = kingpin.Flag("login", "YAML file with login credentials").Required().String()
 		dbPath = kingpin.Flag("db", "SQLite database to use").Default("./data.sqlite3").String()
 		offset = kingpin.Flag("offset", "Start reading at this offset").Default("0").Int32()
+		mysql  = kingpin.Flag("mysql", "Use MySQL instead of SQLite").Bool()
 	)
 	kingpin.Parse()
 	if dbPath == nil || len(*dbPath) == 0 {
-		fmt.Printf("Oh come on. If you're going to screw with the parameters at least do it right!")
+		fmt.Printf("--dbpath requires a filename")
 		return
 	}
-	e, err := setup(*login, *dbPath, *offset)
+	e, err := setup(*login, *dbPath, *offset, mysql)
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
