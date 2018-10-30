@@ -14,6 +14,9 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
+//Criteria is the read conditions for fetching email blasts from Classic.
+const Criteria = "Stage=Complete"
+
 //CSVFilename is where the blast content ends up.
 const CSVFilename = "./blast_content.csv"
 
@@ -33,8 +36,7 @@ type EmailBlast struct {
 //read offsets into a channel.
 func Push(t *godig.Table, c chan int32) error {
 	log.Println("Push start")
-	crit := "Stage=Complete"
-	x, err := t.Count(crit)
+	x, err := t.Count(Criteria)
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func Fetch(t *godig.Table, c chan int32, e chan EmailBlast, d chan bool) error {
 			break
 		}
 		var a []EmailBlast
-		err := t.Many(x, 500, "", &a)
+		err := t.Many(x, 500, Criteria, &a)
 		if err != nil {
 			return err
 		}
@@ -124,6 +126,7 @@ func WaitFor(d chan bool, n int, e chan EmailBlast) {
 		n--
 		log.Printf("WaitFor waiting for %d\n", n)
 	}
+	close(e)
 	log.Println("WaitFor done")
 }
 
