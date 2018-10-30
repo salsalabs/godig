@@ -2,14 +2,23 @@
 package main
 
 import (
+	"encoding/csv"
 	"log"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
+
+//CSVFilename is where the blast content ends up.
+const CSVFilename = "./blast_content.csv"
+
+//Headers are the CSV headers for EmailBlast records.
+const Headers = "SupporterKey,Date,Subjject,HTML,Text"
 
 //EmailBlast is the content that this app will read from Salsa Classic.
 type EmailBlast struct {
@@ -69,8 +78,58 @@ func Fetch(t *godig.Table, c chan int32, e chan EmailBlast, d chan bool) error {
 	return nil
 }
 
+//Store reads email blasts from the blast channel and writes them to a
+//CSV file.  CSV filename is hard coded.
+func Store(e chan EmailBlast) error {
+	log.Println("Store start")
+	f, err := os.Create(CSVFilename)
+	if err != nil {
+		return err
+	}
+	w := csv.NewWriter(f)
+	h := strings.Split(Headers, ",")
+	w.Write(h)
+
+	for {
+		r, ok := <-e
+		if !ok {
+			break
+		}
+		d := godig.EngageDate(r.DateRequested)
+		a := []string{
+			r.EmailBlastKey,
+			d,
+			r.Subject,
+			r.HTMLContent,
+			r.TextContent,
+		}
+		w.Write(a)
+		log.Printf("%-8s %v %v\n", r.EmailBlastKey, d, r.Subject)
+		w.Flush()
+	}
+	w.Flush()
+	err = f.Close()
+	return err
+}
+
+//WaitFor waits for 'n' messages to appear on the done channel.
+//When that happens, WaitFor closes the blast channel.
+func WaitFor(d chan bool, n int, e chan EmailBlast) {
+	log.Printf("WaitFor start")
+	for n > 0 {
+		_, ok := <-d
+		if !ok {
+			break
+		}
+		n--
+		log.Printf("WaitFor waiting for %d\n", n)
+	}
+	log.Println("WaitFor done")
+}
+
+//main is the main program.
 func main() {
-	login := kingpin.Flag("login", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+	login := kingpin.Flag("login", "YAML file containing Salsa Classic credentials").Required().String()
 	kingpin.Parse()
 	api, err := godig.YAMLAuth(*login)
 	if err != nil {
@@ -83,14 +142,20 @@ func main() {
 	var w sync.WaitGroup
 	log.Println("Main start")
 
-	go (func(t *godig.Table, c chan int32, w *sync.WaitGroup) {
+	go (func(e chan EmailBlast, w *sync.WaitGroup) {
 		w.Add(1)
-		err := Push(t, c)
+		err := Store(e)
 		if err != nil {
 			panic(err)
 		}
 		w.Done()
-	})(&t, c, &w)
+	})(e, &w)
+
+	go (func(d chan bool, n int, e chan EmailBlast, w *sync.WaitGroup) {
+		w.Add(1)
+		WaitFor(d, n, e)
+		w.Done()
+	})(d, 5, e, &w)
 
 	for i := 0; i < 5; i++ {
 		go (func(t *godig.Table, c chan int32, e chan EmailBlast, d chan bool, w *sync.WaitGroup) {
@@ -102,6 +167,15 @@ func main() {
 			w.Done()
 		})(&t, c, e, d, &w)
 	}
+
+	go (func(t *godig.Table, c chan int32, w *sync.WaitGroup) {
+		w.Add(1)
+		err := Push(t, c)
+		if err != nil {
+			panic(err)
+		}
+		w.Done()
+	})(&t, c, &w)
 
 	//Settle time then wait for things to end.
 	time.Sleep(10000)
