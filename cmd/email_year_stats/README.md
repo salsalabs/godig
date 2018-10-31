@@ -34,24 +34,55 @@ go install github.com/salsalabs/godig
 ### Credentials
 The application needs Salsa Classic campaign manager credentials in order to the the API.  You'll pass these credentials to the app via a YAML file.  Here's a sample YAML file.
 
-```yaml
+```
 host: salsa4.salsalabs.com
 email: barney.blue@frog.bizi
 password: 0iquhVthecteqwn0xdhmQnih
 ```
 [Read the API doc](https://help.salsalabs.com/hc/en-us/articles/115000341773-Salsa-Application-Program-Interface-API-) if you have questions.
+
 ## Execution
 ```bash
 cd ~/go/src/github.com/salsalabs/godig
-go run cmd/email_year_stats/main.go --login LOGIN.YAML
+go run cmd/email_year_stats/main.go --help
+
+usage: main --login=LOGIN [<flags>]
+
+Flags:
+  --help                 Show context-sensitive help (also try --help-long and --help-man).
+  --login=LOGIN          YAML file with login credentials
+  --db="./data.sqlite3"  SQLite database to use
+  --offset=0             Start reading at this offset
+  --mysql                Use MySQL instead of SQLite
 ```
-Where LOGIN.YAML is described in the previous section.
+Where LOGIN is described in the previous section.
+
 ## Database
-The application will create a SQLite database in the current
-directory.  The database will contain extractions from records
+The application will use
+
+* a SQLite database in the current directory, or
+* a MySQL/MariaDB database
+
+The MySQL/MariaDB database uses these parameters
+
+| Param | Value |
+| ----- | ----- |
+|host | 127.0.0.1|
+|database| generic |
+|user | generic |
+|password| hard coded|
+
+
+Checking in a hard-coded database is suboptimal.  Secure-ish  (no PII and bad guys would have to find the database), but still suboptimal.
+
+TODO: Create a mysql database parameter file.
+
+### Schema
+
+The database will contain extractions from records
 in the email table.  The database will not contain personally-identifiable information (PII).
 
-There is only one table in the SQLite database.
+There is only one table in the database.
 ```SQL
 CREATE TABLE IF NOT EXISTS (
     year integer,
@@ -59,7 +90,7 @@ CREATE TABLE IF NOT EXISTS (
     status text)
 )
 ```
-## Analysis
+### Analysis
 The initial requirement was for the number of supporters who 
 at least opened an email, reported on a hearly basis.  We
 can retrieve that from the database using these statements.
