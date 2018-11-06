@@ -50,9 +50,9 @@ func (e *env) fetch() error {
 			e.D <- true
 			break
 		}
-		log.Printf("fetch: popped %8d\n", offset)
+		fmt.Printf("fetch: popped %8d\n", offset)
 		var a []email
-		err := e.T.Many(offset, 500, "", &a)
+		err := e.T.Many(offset, 500, "Status IN Sent and Opened,Sent and Clicked", &a)
 		if err != nil {
 			return err
 		}
@@ -69,13 +69,13 @@ func (e *env) fetch() error {
 func (e *env) push() error {
 	fmt.Println("push: start")
 
-	s, err := e.T.Count("")
+	s, err := e.T.Count("Status IN Sent and Opened,Sent and Clicked")
 	x, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
 		return err
 	}
 	max := int32(x)
-	log.Printf("push: max is %v\n", max)
+	fmt.Printf("push: max is %v\n", max)
 	for i := e.Offset; i <= max; i += 500 {
 		e.N <- i
 	}
@@ -162,7 +162,7 @@ func (e *env) store() error {
 		}
 		count++
 	}
-	log.Printf("store: done, count is %v\n", count)
+	fmt.Printf("store: done, count is %v\n", count)
 	return nil
 }
 
@@ -214,7 +214,7 @@ func main() {
 	})(e, &wg)
 
 	// Read offsets, push email records.
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		go (func(e *env, wg *sync.WaitGroup) {
 			wg.Add(1)
 			err := e.fetch()
@@ -238,7 +238,7 @@ func main() {
 	// Wait for fetchers to terminate.
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
-		e.waitFor(5)
+		e.waitFor(10)
 		wg.Done()
 		if err != nil {
 			log.Fatalf("%v\n", err)
