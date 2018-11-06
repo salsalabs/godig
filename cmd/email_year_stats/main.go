@@ -50,7 +50,7 @@ func (e *env) fetch() error {
 			e.D <- true
 			break
 		}
-		fmt.Printf("fetch: popped %8d\n", offset)
+		log.Printf("fetch: popped %8d\n", offset)
 		var a []email
 		err := e.T.Many(offset, 500, "", &a)
 		if err != nil {
@@ -75,7 +75,7 @@ func (e *env) push() error {
 		return err
 	}
 	max := int32(x)
-	fmt.Printf("push: max is %v\n", max)
+	log.Printf("push: max is %v\n", max)
 	for i := e.Offset; i <= max; i += 500 {
 		e.N <- i
 	}
@@ -162,7 +162,7 @@ func (e *env) store() error {
 		}
 		count++
 	}
-	fmt.Printf("store: done, count is %v\n", count)
+	log.Printf("store: done, count is %v\n", count)
 	return nil
 }
 
