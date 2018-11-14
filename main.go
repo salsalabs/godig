@@ -14,7 +14,8 @@ import (
 const ParseFmt = "Mon Jan 2 2006 15:04:05 (MST)"
 
 //LayoutFmt is used to format a time so that Engage will recognize it.
-const LayoutFmt = "2006-Jan-02T15:04:05"
+//const LayoutFmt = "2006-01-02T15:04:05"
+const LayoutFmt = "2006-01-02"
 
 //API hold the data that we need to do Salsa API calls.  That includes
 //the cookies from authentication.
