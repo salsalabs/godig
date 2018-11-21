@@ -16,6 +16,17 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
+//conditions are used to constrain the records being read.
+//Current constraint is for a client that only wants stats
+//for supporters who opened an email in the last calendar
+//year.
+const conditions = "Status IN Sent and Opened,Sent and Clicked&condition=Time_Sent>2017-11-07"
+
+//fetCount is the number of fetch goroutines that get started.
+//Ten is about right.  Twenty won't work.  Five is for the cases
+//where Salsa throws 502 errors.
+const fetchCount = 5
+
 //env is the internal runtime environment.
 type env struct {
 	N      chan int32
@@ -52,7 +63,7 @@ func (e *env) fetch() error {
 		}
 		fmt.Printf("fetch: popped %8d\n", offset)
 		var a []email
-		err := e.T.Many(offset, 500, "Status IN Sent and Opened,Sent and Clicked", &a)
+		err := e.T.Many(offset, 500, conditions, &a)
 		if err != nil {
 			return err
 		}
@@ -69,7 +80,7 @@ func (e *env) fetch() error {
 func (e *env) push() error {
 	fmt.Println("push: start")
 
-	s, err := e.T.Count("Status IN Sent and Opened,Sent and Clicked")
+	s, err := e.T.Count("")
 	x, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
 		return err
@@ -85,12 +96,15 @@ func (e *env) push() error {
 }
 
 //setup configures and return an env.
-func setup(login string, dbPath string, offset int32, mysql *bool) (*env, error) {
+func setup(login string, dbPath string, offset int32, mysql *bool, apiVerbose *bool) (*env, error) {
 	fmt.Println("setup: start")
 	api, err := (godig.YAMLAuth(login))
 	if err != nil {
 		return nil, err
 	}
+
+	api.Verbose = *apiVerbose
+
 	t := api.NewTable("email")
 	var db *sql.DB
 	if mysql != nil && *mysql {
@@ -123,7 +137,7 @@ func setup(login string, dbPath string, offset int32, mysql *bool) (*env, error)
 	if err != nil {
 		panic(err)
 	}
-	c := make(chan email, 100)
+	c := make(chan email, 500)
 	d := make(chan bool)
 	n := make(chan int32, 1000)
 	e := env{
@@ -166,37 +180,37 @@ func (e *env) store() error {
 	return nil
 }
 
-//waitFor watches the done channel for 'n' messages to arrive.  When the n-th
-//one arrives, then close save channel.
-func (e *env) waitFor(n int) {
-	fmt.Println("waitFor: start")
+//waitFor is responsible for getting a number of "done" notifications, then closing
+//the .
+func (e *env) waitFor(c int) {
 	for {
 		_, ok := <-e.D
 		if !ok {
 			break
 		}
-		n--
-		if n == 0 {
+		c--
+		if c == 0 {
+			log.Println("waitFor done")
 			break
 		}
 	}
 	close(e.C)
-	fmt.Println("waitFor: done")
 }
 
 func main() {
 	var (
-		login  = kingpin.Flag("login", "YAML file with login credentials").Required().String()
-		dbPath = kingpin.Flag("db", "SQLite database to use").Default("./data.sqlite3").String()
-		offset = kingpin.Flag("offset", "Start reading at this offset").Default("0").Int32()
-		mysql  = kingpin.Flag("mysql", "Use MySQL instead of SQLite").Bool()
+		login      = kingpin.Flag("login", "YAML file with login credentials").Required().String()
+		dbPath     = kingpin.Flag("db", "SQLite database to use").Default("./data.sqlite3").String()
+		offset     = kingpin.Flag("offset", "Start reading at this offset").Default("0").Int32()
+		mysql      = kingpin.Flag("mysql", "Use MySQL instead of SQLite").Bool()
+		apiVerbose = kingpin.Flag("apiVerbose", "See URLs and buffers from Stratus").Default("False").Bool()
 	)
 	kingpin.Parse()
 	if dbPath == nil || len(*dbPath) == 0 {
 		fmt.Printf("--dbpath requires a filename")
 		return
 	}
-	e, err := setup(*login, *dbPath, *offset, mysql)
+	e, err := setup(*login, *dbPath, *offset, mysql, apiVerbose)
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
@@ -214,7 +228,7 @@ func main() {
 	})(e, &wg)
 
 	// Read offsets, push email records.
-	for i := 0; i < 10; i++ {
+	for i := 0; i < fetchCount; i++ {
 		go (func(e *env, wg *sync.WaitGroup) {
 			wg.Add(1)
 			err := e.fetch()
@@ -238,7 +252,7 @@ func main() {
 	// Wait for fetchers to terminate.
 	go (func(e *env, wg *sync.WaitGroup) {
 		wg.Add(1)
-		e.waitFor(10)
+		e.waitFor(fetchCount)
 		wg.Done()
 		if err != nil {
 			log.Fatalf("%v\n", err)
