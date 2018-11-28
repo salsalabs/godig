@@ -1,96 +1,118 @@
 package main
 
 import (
+	"encoding/csv"
+	"fmt"
+	"io"
 	"log"
+	"os"
 	"sync"
 
-	"github.com/salsalabs/godig"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-//Fields are retrieved from the supporter record.
-type Fields struct {
-	SupporterKey string `json:"supporter_KEY"`
-	FirstName    string `json:"First_Name"`
-	LastName     string `json:"Last_Name"`
-	Email        string
-}
-
-//All reads from Salsa via the API.  If the criteria is not empty,
-//then records that match that criteria are returned.  Each read
-//parses the buffer for records then outputs them to cout.
-func All(t *godig.Table, crit string, cout chan Fields) {
-	offset := int32(0)
-	count := 500
-	for count > 0 {
-		log.Printf("All: %v offset %6d\n", t.Name, offset)
-		if offset > 0 && offset%5000 == 0 {
-			log.Printf("All: %v offset %6d\n", t.Name, offset)
+//CSVToMap accepts a Reader and returns an array of maps.
+//Many thanks to https://gist.github.com/drernie/5684f9def5bee832ebc50cabb46c377a
+func CSVToMap(reader io.Reader) ([]map[string]string, error) {
+	r := csv.NewReader(reader)
+	rows := []map[string]string{}
+	var header []string
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
 		}
-		var a []Fields
-		err := t.Many(offset, count, crit, &a)
 		if err != nil {
-			log.Fatalf("All: %v offset %6d %v\n", t.Name, offset, err)
-			close(cout)
-			return
+			return rows, err
 		}
-		count = len(a)
-		if count == 0 {
-			log.Printf("All: %v offset %6d, done\n", t.Name, offset)
-			close(cout)
-			return
+		if header == nil {
+			header = record
+		} else {
+			dict := map[string]string{}
+			for i := range header {
+				dict[header[i]] = record[i]
+			}
+			rows = append(rows, dict)
 		}
-		for _, r := range a {
-			cout <- r
-		}
-		offset = offset + count
 	}
+	return rows, nil
 }
 
-//Use accepts Fields records from a channel and displays them.
-func Use(cin chan Fields) {
-	for f := range cin {
-		//https://api.trumail.io/v2/lookups/{{format}}?email={{email}}
-
-		log.Printf("%s %s\n", f.SupporterKey, f.Email)
+//Save reads supporters from a queue and writes them to an output
+//CSV file.
+func Save(fn string, i chan map[string]string) {
+	log.Println("Save start")
+	f, err := os.Create(fn)
+	if err != nil {
+		log.Fatalf("%v on %v", err, fn)
 	}
+	w := csv.NewWriter(f)
+	var h []string
+	for {
+		r, ok := <-i
+		if !ok {
+			break
+		}
+		if h == nil {
+			for k, _ := range r {
+				h = append(h, k)
+			}
+			w.Write(h)
+		}
+		var a []string
+		for _, s := range h {
+			a = append(a, r[s])
+		}
+		err := w.Write(a)
+		if err != nil {
+			log.Fatalf("%v on %v", err, fn)
+		}
+	}
+	w.Flush()
+	log.Println("Save done")
+}
+
+//Pump reads maps from a Reader and writes them to the channel.
+//The channel is closed when the reader empties.
+func Pump(r io.Reader, c chan map[string]string) {
+	log.Println("Pump start")
+	a, err := CSVToMap(r)
+	if err != nil {
+		log.Fatalf("%v converting CSV to a map", err)
+	}
+	for _, r := range a {
+		c <- r
+	}
+	close(c)
+	log.Println("Pump done")
 }
 
 //Mainline.  Find supporters and display some info about each.
 func main() {
-	cpath := kingpin.Flag("login", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+	ipath := kingpin.Flag("csv", "CSV file to read").PlaceHolder("INPUT").Required().String()
+	opath := kingpin.Flag("out", "CSV file to write").PlaceHolder("OUTPUT").Required().String()
 	kingpin.Parse()
 
-	a, err := godig.YAMLAuth(*cpath)
+	f, err := os.Open(*ipath)
 	if err != nil {
-		log.Fatalf("Authentication error: %+v\n", err)
+		log.Fatalf("%v on %v", err, *ipath)
 	}
-
-	t := a.Supporter()
-	count, err := t.Count("")
-	log.Printf("Main: %v count is %v, err is %v\n", t.Name, count, err)
-	if err != nil {
-		panic(err)
-	}
-	c := make(chan Fields, 100)
 	var wg sync.WaitGroup
+	c := make(chan map[string]string, 100)
 
-	log.Println("Main: start")
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
-		defer w.Done()
-		Use(c)
-	}(&wg)
+	go func(wg *sync.WaitGroup, r io.Reader, c chan map[string]string) {
+		wg.Add(1)
+		Pump(f, c)
+		wg.Done()
+	}(&wg, f, c)
 
-	log.Println("Main: Use started")
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
-		defer w.Done()
-		All(&t, *crit, c)
-	}(&wg)
-	log.Println("Main: All started")
+	go func(wg *sync.WaitGroup, fn string, c chan map[string]string) {
+		wg.Add(1)
+		Save(fn, c)
+		wg.Done()
+	}(&wg, *opath, c)
 
-	log.Println("Main: waiting...")
+	fmt.Println("Main waiting")
 	wg.Wait()
-	log.Println("Main: done")
+	fmt.Println("Main done")
 }
