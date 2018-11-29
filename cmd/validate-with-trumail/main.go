@@ -22,15 +22,15 @@ type TruMail struct {
 	Domain      string `json:"domain"`
 	Md5Hash     string `json:"md5Hash"`
 	Suggestion  string `json:"suggestion"`
-	ValidFormat string `json:"validFormat"`
-	Deliverable string `json:"deliverable"`
-	FullInbox   string `json:"fullInbox"`
-	HostExists  string `json:"hostExists"`
-	CatchAll    string `json:"catchAll"`
-	Gravatar    string `json:"gravatar"`
-	Role        string `json:"role"`
-	Disposable  string `json:"disposable"`
-	Free        string `json:"free"`
+	ValidFormat bool   `json:"validFormat"`
+	Deliverable bool   `json:"deliverable"`
+	FullInbox   bool   `json:"fullInbox"`
+	HostExists  bool   `json:"hostExists"`
+	CatchAll    bool   `json:"catchAll"`
+	Gravatar    bool   `json:"gravatar"`
+	Role        bool   `json:"role"`
+	Disposable  bool   `json:"disposable"`
+	Free        bool   `json:"free"`
 }
 
 //CSVToMap accepts a Reader and returns an array of maps.
@@ -66,6 +66,7 @@ func CSVToMap(reader io.Reader) ([]map[string]string, error) {
 //records.  Records are written to the target channel.  The target
 //channel is closed when there is no mmore data on the source channel.
 func Lookup(s chan map[string]string, t chan map[string]string) {
+	log.Println("Lookup start")
 	trumail := "https://api.trumail.io/v2/lookups/json?email=%s"
 	c := http.Client{
 		Timeout: time.Second * 5,
@@ -76,8 +77,9 @@ func Lookup(s chan map[string]string, t chan map[string]string) {
 			break
 		}
 		u := fmt.Sprintf(trumail, r["Email"])
-		validFormat := ""
-		deliverable := ""
+		var validFormat bool
+		var deliverable bool
+		var hostExists bool
 		var err error
 		req, err := http.NewRequest(http.MethodGet, u, nil)
 		if err == nil {
@@ -91,32 +93,40 @@ func Lookup(s chan map[string]string, t chan map[string]string) {
 					if err == nil {
 						validFormat = tr.ValidFormat
 						deliverable = tr.Deliverable
+						hostExists = tr.HostExists
+					} else {
+						log.Printf("%v on json.Unmarshal", err)
 					}
+				} else {
+					log.Printf("%v on RealAll", err)
 				}
+			} else {
+				log.Printf("%v on HTTP get", err)
 			}
-		}
-		if err != nil {
+		} else {
 			log.Printf("%v on %v", err, u)
 		}
-		r["ValidFormat"] = validFormat
-		r["Deliverable"] = deliverable
+		r["ValidFormat"] = fmt.Sprintf("%v", validFormat)
+		r["Deliverable"] = fmt.Sprintf("%v", deliverable)
+		r["HostExists"] = fmt.Sprintf("%v", hostExists)
+		log.Printf("Lookup: %-40s %s %s %s\n", r["Email"], r["ValidFormat"], r["Deliverable"], r["HostExists"])
 		t <- r
 	}
-
+	log.Println("Lookup start")
 }
 
 //Pump reads maps from a Reader and writes them to the channel.
 //The channel is closed when the reader empties.
-func Pump(r io.Reader, c chan map[string]string) {
+func Pump(r io.Reader, s chan map[string]string) {
 	log.Println("Pump start")
 	a, err := CSVToMap(r)
 	if err != nil {
 		log.Fatalf("%v converting CSV to a map", err)
 	}
 	for _, r := range a {
-		c <- r
+		s <- r
 	}
-	close(c)
+	close(s)
 	log.Println("Pump done")
 }
 
@@ -176,9 +186,9 @@ func main() {
 
 	go func(wg *sync.WaitGroup, fn string, t chan map[string]string) {
 		wg.Add(1)
-		Save(fn, s)
+		Save(fn, t)
 		wg.Done()
-	}(&wg, *opath, s)
+	}(&wg, *opath, t)
 
 	go func(wg *sync.WaitGroup, r io.Reader, s chan map[string]string) {
 		wg.Add(1)
