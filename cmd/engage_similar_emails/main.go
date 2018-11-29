@@ -2,36 +2,15 @@ package main
 
 import (
 	"encoding/csv"
-	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
+	"math"
 	"os"
+	"strings"
 	"sync"
-	"time"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
-
-//TruMail is returned by trumail.io when an email is submitted.
-type TruMail struct {
-	Address     string `json:"address"`
-	Username    string `json:"username"`
-	Domain      string `json:"domain"`
-	Md5Hash     string `json:"md5Hash"`
-	Suggestion  string `json:"suggestion"`
-	ValidFormat bool   `json:"validFormat"`
-	Deliverable bool   `json:"deliverable"`
-	FullInbox   bool   `json:"fullInbox"`
-	HostExists  bool   `json:"hostExists"`
-	CatchAll    bool   `json:"catchAll"`
-	Gravatar    bool   `json:"gravatar"`
-	Role        bool   `json:"role"`
-	Disposable  bool   `json:"disposable"`
-	Free        bool   `json:"free"`
-}
 
 //CSVToMap accepts a Reader and returns an array of maps.
 //Many thanks to https://gist.github.com/drernie/5684f9def5bee832ebc50cabb46c377a
@@ -60,65 +39,30 @@ func CSVToMap(reader io.Reader) ([]map[string]string, error) {
 	return rows, nil
 }
 
-//Lookup sreads supporters from the source channel and looks up the
-//Email address. The supporter record is augmented with the results
-//of the lookup.  Lookup failures append empty fields to the supporter
-//records.  Records are written to the target channel.  The target
-//channel is closed when there is no mmore data on the source channel.
-func Lookup(s chan map[string]string, t chan map[string]string) {
-	log.Println("Lookup start")
-	trumail := "https://api.trumail.io/v2/lookups/json?email=%s"
-	c := http.Client{
-		Timeout: time.Second * 5,
-	}
+//Filter reads supporter information from a channel.  The email
+//is compared with the previously read record.  If they are "similar"
+//for some values of similarity, then the supporter records are
+//written to the output channel.
+func Filter(s chan map[string]string, t chan map[string]string) {
+	log.Println("Filter start")
+	var p map[string]string
 	for {
 		r, ok := <-s
 		if !ok {
 			break
 		}
-		u := fmt.Sprintf(trumail, r["Email"])
-		var validFormat bool
-		var deliverable bool
-		var hostExists bool
-		var suggestion string
-		var err error
-		req, err := http.NewRequest(http.MethodGet, u, nil)
-		if err == nil {
-			req.Header.Set("User-Agent", "salsalabs-lookup")
-			res, err := c.Do(req)
-			if err == nil {
-				b, err := ioutil.ReadAll(res.Body)
-				if err == nil {
-					tr := TruMail{}
-					err := json.Unmarshal(b, &tr)
-					if err == nil {
-						validFormat = tr.ValidFormat
-						deliverable = tr.Deliverable
-						hostExists = tr.HostExists
-						suggestion = tr.Suggestion
-					} else {
-						log.Printf("%v on json.Unmarshal", err)
-					}
-				} else {
-					log.Printf("%v on RealAll", err)
-				}
-			} else {
-				log.Printf("%v on HTTP get", err)
-			}
+		if p == nil {
+			p = r
 		} else {
-			log.Printf("%v on %v", err, u)
-		}
-		r["ValidFormat"] = fmt.Sprintf("%v", validFormat)
-		r["Deliverable"] = fmt.Sprintf("%v", deliverable)
-		r["HostExists"] = fmt.Sprintf("%v", hostExists)
-		r["Suggestion"] = suggestion
-		log.Printf("Lookup: %-40s %s %s %s\n", r["Email"], r["ValidFormat"], r["Deliverable"], r["HostExists"])
-		if !validFormat || !deliverable || !hostExists || len(suggestion) > 0 {
-			t <- r
+			if Similar(p, r) {
+				t <- p
+				t <- r
+			}
+			p = r
 		}
 	}
 	close(t)
-	log.Println("Lookup done")
+	log.Println("Filter done")
 }
 
 //Pump reads maps from a Reader and writes them to the channel.
@@ -170,9 +114,55 @@ func Save(fn string, i chan map[string]string) {
 	log.Println("Save done")
 }
 
+//Identify accepts an email and returns a value for similarity
+//testing.
+func Identify(e string) string {
+	a := strings.Split(e, "@")
+	if len(a) > 1 {
+		e = a[0]
+		a = strings.Split(a[1], ".")
+		if len(a) > 1 {
+			e = e + a[0]
+		}
+	}
+	return e
+}
+
+//MatchPercent accepts two strings and returns a percentage.
+//The percentage is computed as the number of characters in the
+//first string that match the second string dividied by the length
+//of the second string.
+func MatchPercent(a, b string) float64 {
+	s1 := []rune(a)
+	s2 := []rune(b)
+	x := math.Min(float64(len(a)), float64(len(b)))
+	count := 0
+	for i := 0; i < int(x); i++ {
+		if s1[i] == s2[i] {
+			count = count + 1
+		}
+	}
+	return float64(count) * 100.0 / float64(len(b))
+}
+
+//Similar compares two supporter records to determine if they
+//are similar for certain values of similarity.  Returns true
+//if they are similar, false otherwise.
+func Similar(p, r map[string]string) bool {
+	if p["InternalID"] != r["InternalID"] {
+		n1 := Identify(p["Email"])
+		n2 := Identify(r["Email"])
+		pc := MatchPercent(n1, n2)
+		return pc > 70.0
+	}
+	return false
+}
+
 //Mainline.  Find supporters and display some info about each.
+//This app only works because the input file is sorted.  If it's
+//not sorted on email then things will go sideways really quickly.
 func main() {
-	ipath := kingpin.Flag("csv", "CSV file to read").PlaceHolder("INPUT").Required().String()
+	ipath := kingpin.Flag("in", "CSV file to read *sorted by email*").PlaceHolder("INPUT").Required().String()
 	opath := kingpin.Flag("out", "CSV file to write").PlaceHolder("OUTPUT").Required().String()
 	kingpin.Parse()
 
@@ -186,7 +176,7 @@ func main() {
 
 	go func(wg *sync.WaitGroup, s chan map[string]string, t chan map[string]string) {
 		wg.Add(1)
-		Lookup(s, t)
+		Filter(s, t)
 		wg.Done()
 	}(&wg, s, t)
 
