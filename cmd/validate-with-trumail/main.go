@@ -69,7 +69,7 @@ func Lookup(s chan map[string]string, t chan map[string]string) {
 	log.Println("Lookup start")
 	trumail := "https://api.trumail.io/v2/lookups/json?email=%s"
 	c := http.Client{
-		Timeout: time.Second * 5,
+		Timeout: time.Second * 10,
 	}
 	for {
 		r, ok := <-s
@@ -112,6 +112,7 @@ func Lookup(s chan map[string]string, t chan map[string]string) {
 		log.Printf("Lookup: %-40s %s %s %s\n", r["Email"], r["ValidFormat"], r["Deliverable"], r["HostExists"])
 		t <- r
 	}
+	close(t)
 	log.Println("Lookup start")
 }
 
@@ -166,7 +167,7 @@ func Save(fn string, i chan map[string]string) {
 
 //Mainline.  Find supporters and display some info about each.
 func main() {
-	ipath := kingpin.Flag("csv", "CSV file to read").PlaceHolder("INPUT").Required().String()
+	ipath := kingpin.Flag("in", "CSV file to read").PlaceHolder("INPUT").Required().String()
 	opath := kingpin.Flag("out", "CSV file to write").PlaceHolder("OUTPUT").Required().String()
 	kingpin.Parse()
 
