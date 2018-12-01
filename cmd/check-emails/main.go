@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/badoux/checkmail"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -54,16 +55,11 @@ func Filter(s chan map[string]string, t chan map[string]string, done chan bool) 
 		}
 		hasError := false
 		m := ""
-		err := checkmail.ValidateFormat(r["Email"])
-		if err != nil {
-			m = fmt.Sprintf("%v", err)
-			hasError = true
-		} else {
-			m = ""
-		}
-		r["FormatErr"] = m
 
-		err = checkmail.ValidateHost(r["Email"])
+		// Need a little space here.
+		time.Sleep(100 * time.Millisecond)
+
+		err := checkmail.ValidateHost(r["Email"])
 		if err != nil {
 			m = fmt.Sprintf("%v", err)
 			hasError = true
@@ -182,10 +178,10 @@ func main() {
 		log.Fatalf("%v on %v", err, *ipath)
 	}
 	var wg sync.WaitGroup
-	s := make(chan map[string]string, 100)
-	t := make(chan map[string]string, 100)
+	s := make(chan map[string]string, 10000)
+	t := make(chan map[string]string, 10000)
 	done := make(chan bool)
-	count := 10
+	count := 20
 
 	for i := 0; i < count; i++ {
 		go func(wg *sync.WaitGroup, s chan map[string]string, t chan map[string]string, d chan bool) {
