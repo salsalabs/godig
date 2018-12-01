@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -40,11 +41,12 @@ func CSVToMap(reader io.Reader) ([]map[string]string, error) {
 	return rows, nil
 }
 
-//Lookup reads supporter information from a channel. The email
-//address' domain name is extracted and looked up.  The lookup results
-//are appended to the record and it's put into the target channel.
-func Lookup(s chan map[string]string, t chan map[string]string, done chan bool) {
-	log.Println("Lookup start")
+//Filter reads supporter information from a channel. The email
+//address' domain name is extracted and looked up.  If the lookup
+//fails, then the record is written to the target queue.``
+func Filter(s chan map[string]string, t chan map[string]string, done chan bool) {
+	longMessage := regexp.MustCompile("\\.\\s+")
+	log.Println("Filter start")
 	for {
 		r, ok := <-s
 		if !ok {
@@ -69,11 +71,11 @@ func Lookup(s chan map[string]string, t chan map[string]string, done chan bool) 
 			m = ""
 		}
 		r["HostErr"] = m
-		err = checkmail.ValidateHost(r["Email"])
+		//err = checkmail.ValidateHost(r["Email"])
 		if smtpErr, ok := err.(checkmail.SmtpError); ok && err != nil {
-			m = fmt.Sprintf("%s", smtpErr.Code())
 			hasError = true
-			mp := strings.Split(m, ". ")
+			m = fmt.Sprintf("%s", smtpErr.Code())
+			mp := longMessage.Split(m, -1)
 			if len(mp) > 1 {
 				m = mp[0]
 			}
@@ -86,7 +88,7 @@ func Lookup(s chan map[string]string, t chan map[string]string, done chan bool) 
 		}
 	}
 	done <- true
-	log.Println("Lookup done")
+	log.Println("Filter done")
 }
 
 //Pump reads maps from a Reader and writes them to the channel.
@@ -188,7 +190,7 @@ func main() {
 	for i := 0; i < count; i++ {
 		go func(wg *sync.WaitGroup, s chan map[string]string, t chan map[string]string, d chan bool) {
 			wg.Add(1)
-			Lookup(s, t, d)
+			Filter(s, t, d)
 			wg.Done()
 		}(&wg, s, t, done)
 	}
