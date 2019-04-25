@@ -45,6 +45,14 @@ type CredData struct {
 	Password string
 }
 
+//DeleteStatus contins the info returned by deleting a record.
+type DeleteStatus struct {
+	Object   string
+	Key      string
+	Result   string
+	Messages []string
+}
+
 //Fields are the fields returned when calling Describe.
 //Describe returns an array of Fields.
 type Fields struct {
