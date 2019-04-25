@@ -270,6 +270,9 @@ func (t *Table) SaveBulk(s string) ([]byte, error) {
 		req.AddCookie(c)
 	}
 	// TODO: figure out what to do with the an error response from /save.
+	if t.API.Verbose {
+		fmt.Printf("SaveBulk: %v%v\n", x, w.String())
+	}
 	resp, err := t.Client.Do(req)
 	var body []byte
 	if err == nil {
