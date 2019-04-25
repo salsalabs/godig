@@ -37,4 +37,4 @@ cmd/scrub_templates
 
 # Temporary files
 *.csv
-
+*.html
