@@ -26,7 +26,7 @@ type API struct {
 	Verbose bool
 }
 
-//Table links an API to a Salsa API object.
+//Table links an API to a Salsa database table.
 type Table struct {
 	*API
 	Name string
@@ -73,18 +73,18 @@ func NewAPI() *API {
 	return &c
 }
 
-//NewTable creates a table using a tab/object name.
+//NewTable creates a table using a table/object name.
 func (a *API) NewTable(n string) Table {
 	t := Table{a, n}
 	return t
 }
 
-//Donation is a shortcut for creating a donation Table.
+//Donation is a shortcut for creating a donation Table object.
 func (a *API) Donation() Table {
 	return a.NewTable("donation")
 }
 
-//EmailBlast is a shortcut for creating a donation Table.
+//EmailBlast is a shortcut for creating an EmailBlast Table object.
 func (a *API) EmailBlast() Table {
 	return a.NewTable("email_blast")
 }
@@ -96,13 +96,13 @@ func (a *API) Groups() Table {
 }
 
 //GroupsSupporters is a shortcut to join groups to supporters
-//via the supporter_groups table. Use LeftJoin to get
-//data for this object.
+//via the supporter_groups table. Use LeftJoin to get data for
+//this object.
 func (a *API) GroupsSupporters() Table {
 	return a.NewTable("groups(groups_KEY)supporter_groups(supporter_KEY)supporter")
 }
 
-//Supporter is a shortcut for creating a supporter Table.
+//Supporter is a shortcut for creating a supporter Table object.
 func (a *API) Supporter() Table {
 	return a.NewTable("supporter")
 }
@@ -114,12 +114,12 @@ func (a *API) SupporterDonation() Table {
 	return a.NewTable("supporter(supporter_KEY)donation")
 }
 
-//SupporterGroups is a shortcut for creating a supporter_group table.
+//SupporterGroups is a shortcut for creating a supporter_group Table object.
 func (a *API) SupporterGroups() Table {
 	return a.NewTable("supporter_groups")
 }
 
-//Publish is a shortcut for creating a publish Table.
+//Publish is a shortcut for creating a publish Table object.
 func (a *API) Publish() Table {
 	return a.NewTable("publish")
 }
