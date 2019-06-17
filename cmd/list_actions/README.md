@@ -71,7 +71,7 @@ email:  campaign manager's email address
 password: campaign manager's password
 ```
 
-### Execution
+# Execution
 
 1. Run the Go app to create a bash script to retrieve actions.
 ```bash
@@ -83,6 +83,29 @@ bash fetch_actions.bash
 ```
 1. There may be errors. You'll have to fix those yourself.
 1. When the process is done, there will be a directory named `pdfs/actions`. It contains all of the action PDFs.
+
+# Notes
+
+The scripts used to process actions are generated asynchronously. It's
+eally hard to find out where errors occur because of that.
+
+Here is a bash scrap that sorts the list of actions by action_KEY.
+
+```bash
+sort -k 2 -n -t = fetch_actions.bash >xx.bash
+mv xx.bash fetch_actions.bash
+```
+The sort splits the line into the stuff before and after the equal sign (`-t =`).
+The stuff to the right of the equal sign is the second field (`-k 2`),
+and it starts with the action_KEY, which is numeric (`-n`).  Since the
+first part of the second half is being sorted numerically, action_KEYs
+that start in the 800's (for example) are sorted below the ones in the
+20,000's. If the sort were a straight text sort, then the 800's would
+appear at the bottom.
+
+If the script fails, then you can view the contents of `pdf/actions`
+to see how far along the script was.  Make adjustments to the script
+and continue.
 
 # Questions?
 Use the "Issues" link at the top of this repository to ask questions and report
