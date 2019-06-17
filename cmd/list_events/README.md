@@ -1,19 +1,19 @@
-# Fetch actions and convert to PDF
+# Fetch events and convert to PDF
 
 This app creates a bash shell that causes an application to read the
-contents of actions and then convert them to PDF.  The application is
+contents of events and then convert them to PDF.  The application is
 a NodeJS app that leverates the `puppeteer` library.  That's the only
 thing that I've found that does a nice, neat PDF with out a lot of 
 empty pages at the top.
 
 # Installation
 
-The app expects that `hn.js` is in the current directory and that the current
+The app expects that `hn.js` is in the current directory _and_ that the current
 directory is initialized properly to be both a Go and a NodeJS directory. Use
 these steps to make that happen.
 
 ### Go
-1. Latest version of [Go](https://golang.org}.
+1. Install the latest version of [Go](https://golang.org}.
 1. Correct directory structure.
 ```
 HOME
@@ -41,12 +41,12 @@ HOME
 
 Execute these statements in the `godig` directory.  This is important.
 
-1. [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm)
-1. [NodeJS](https://nodejs.org)
+1. Install [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm)
+1. Install the latest version of nvm in the current directory.
 ```nvm install default```
-1. Dir initialized to be a NodeJS.
+1. Initialize to be a NodeJS package.
 ```npm init #then tap the enter key a bunch of times```
-1. [The `puppeteer` library for NoeJS](https://github.com/GoogleChrome/puppeteer)
+1. Install the `puppeteer` library for NoeJS](https://github.com/GoogleChrome/puppeteer)
 ```npm install --save puppeteer```
 
 
@@ -64,10 +64,10 @@ password: campaign manager's password
 The app expects that `hn.js` is in the current directory and that the current
 directory is initialized properly to be both a Go and a NodeJS directory.  
 
-1. Create a bash script to retrieve actions.
-```(./list_events --login whatever.haml) > fetch_actions.csv```
+1. Create a bash script to retrieve events.
+```(./list_events --login whatever.haml) > fetch_events.csv```
 1. Run the script.
-```bash fetch_actions.csv```
+```bash fetch_events.csv```
 1. There may be errors.  Sorry.  You'll have to fix those yourself.
-1. When the process is done, there will be a directory named `pdfs/actions`. It contains all of the action PDFs.
+1. When the process is done, there will be a directory named `pdfs/events`. It contains all of the event PDFs.
 
