@@ -17,9 +17,9 @@ const (
 	National = "http://engage.jewishpublicaffairs.org/p/salsa/event/common/public/?event_KEY=%v"
 	Chapter  = "http://engage.jewishpublicaffairs.org/c/%v/p/salsa/event/common/public/?event_KEY=%v"
 	Filename = "%v %05v %v"
-	Output   = "fetch_actions.bash"
+	Output   = "fetch_events.bash"
 	Process  = "node hn.js \"%v\" \"pdfs/events/%v\"\n"
-	Punct    = `"[,.;!?(){}\\[\\]<>%]"`
+	Punct    = `"[,.:;!?(){}\\[\\]<>%]"`
 )
 
 //Fields are retrieved from the event record.
@@ -63,7 +63,7 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 	close(cout)
 }
 
-//Use accepts actions and formats them as a script.  Output goes to
+//Use accepts events and formats them as a script.  Output goes to
 //a file.
 func Use(cin chan Fields) {
 	re := regexp.MustCompile(Punct)
@@ -78,12 +78,13 @@ func Use(cin chan Fields) {
 		}
 		d := godig.EngageDate(e.Date)
 		t := strings.TrimSpace(e.Title)
-		t = re.ReplaceAllString(t, "")
 		if len(t) == 0 {
 			t = strings.TrimSpace(e.RefName)
 		}
 		t = re.ReplaceAllString(t, "")
 		p := fmt.Sprintf(Filename, d, e.Key, t)
+		p = strings.TrimSpace(p)
+		p = p + ".pdf"
 		s := fmt.Sprintf(Process, u, p)
 		_, _ = f.WriteString(s)
 	}
