@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,7 +17,8 @@ const (
 	National = "http://engage.jewishpublicaffairs.org/p/salsa/event/common/public/?event_KEY=%v"
 	Chapter  = "http://engage.jewishpublicaffairs.org/c/%v/p/salsa/event/common/public/?event_KEY=%v"
 	Filename = "%v %05v %v"
-	Out      = "node hn.js \"%v\" \"pdfs/events/%v\"\n"
+	Output   = "fetch_actions.bash"
+	Process  = "node hn.js \"%v\" \"pdfs/events/%v\"\n"
 	Punct    = `"[,.;!?(){}\\[\\]<>%]"`
 )
 
@@ -61,24 +63,31 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 	close(cout)
 }
 
-//Use accepts Fields records from a channel and displays them.
+//Use accepts actions and formats them as a script.  Output goes to
+//a file.
 func Use(cin chan Fields) {
 	re := regexp.MustCompile(Punct)
-	for f := range cin {
-		u := fmt.Sprintf(National, f.Key)
-		if len(f.Chapter) > 0 {
-			u = fmt.Sprintf(Chapter, f.Chapter, f.Key)
+	f, err := os.Create(Output)
+	if err != nil {
+		panic(err)
+	}
+	for e := range cin {
+		u := fmt.Sprintf(National, e.Key)
+		if len(e.Chapter) > 0 && e.Chapter != "0" {
+			u = fmt.Sprintf(Chapter, e.Chapter, e.Key)
 		}
-		d := godig.EngageDate(f.Date)
-		t := strings.TrimSpace(f.Title)
+		d := godig.EngageDate(e.Date)
+		t := strings.TrimSpace(e.Title)
 		t = re.ReplaceAllString(t, "")
 		if len(t) == 0 {
-			t = strings.TrimSpace(f.RefName)
+			t = strings.TrimSpace(e.RefName)
 		}
 		t = re.ReplaceAllString(t, "")
-		p := fmt.Sprintf(Filename, d, f.Key, t)
-		fmt.Printf(Out, u, p)
+		p := fmt.Sprintf(Filename, d, e.Key, t)
+		s := fmt.Sprintf(Process, u, p)
+		_, _ = f.WriteString(s)
 	}
+	f.Close()
 }
 
 //Mainline.  Find events and display some info about each.
