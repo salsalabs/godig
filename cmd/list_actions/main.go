@@ -19,7 +19,7 @@ const (
 	Filename = "%v %05v %v"
 	Output   = "fetch_actions.bash"
 	Process  = "node hn.js \"%v\" \"pdfs/actions/%v\"\n"
-	Punct    = `"[,.:;!?(){}\\[\\]<>%]"`
+	Punct    = "[[:punct:]]"
 )
 
 //Fields are retrieved from the action record.
