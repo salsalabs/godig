@@ -14,12 +14,15 @@ import (
 
 //Templates for formatting event page URLs.
 const (
-	National = "http://engage.jewishpublicaffairs.org/p/salsa/event/common/public/?event_KEY=%v"
-	Chapter  = "http://engage.jewishpublicaffairs.org/c/%v/p/salsa/event/common/public/?event_KEY=%v"
+	//National = "http://engage.jewishpublicaffairs.org/p/salsa/event/common/public/?event_KEY=%v"
+	//Chapter  = "http://engage.jewishpublicaffairs.org/c/%v/p/salsa/event/common/public/?event_KEY=%v"
+	National = "https://org2.salsalabs.com/o/5145/p/salsa/event/common/public/?event_KEY=%v"
+	Chapter  = "https://org2.salsalabs.com/o/5145/c/%v/p/salsa/event/common/public/?event_KEY=%v"
 	Filename = "%v %05v %v"
 	Output   = "fetch_events.bash"
 	Process  = "node hn.js \"%v\" \"pdfs/events/%v\"\n"
-	Punct    = `"[,.:;!?(){}\\[\\]<>%]"`
+	//Punct    = `[,\\.\\:;\\!\\?\\(\\)\\{\\}\\[\\]<>%\\/]`
+	Punct = "[[:punct:]]"
 )
 
 //Fields are retrieved from the event record.
