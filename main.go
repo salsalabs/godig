@@ -13,9 +13,11 @@ import (
 //way to do that is to remove the hour offset before parsing.  See `date()`.
 const ParseFmt = "Mon Jan 2 2006 15:04:05 (MST)"
 
-//LayoutFmt is used to format a time so that Engage will recognize it.
-//const LayoutFmt = "2006-01-02T15:04:05"
-const LayoutFmt = "2006-01-02"
+//DateFormat is used to format a time so that Engage will recognize it.
+const DateFormat = "2006-01-02"
+
+//TimestampFormat is used to format a time so that Engage will recognize it.
+const TimestampFormat = "2006-01-02T15:04:05"
 
 //API hold the data that we need to do Salsa API calls.  That includes
 //the cookies from authentication.
@@ -137,7 +139,26 @@ func EngageDate(s string) string {
 		if err != nil {
 			log.Printf("Warning: parsing %v returned %v\n", s, err)
 		} else {
-			s = t.Format(LayoutFmt)
+			s = t.Format(DateFormat)
+		}
+	}
+	return s
+}
+
+//EngageTimestamp parses converts a string containing a MySQL date to
+//another string containing an Engage date and time.
+func EngageTimestamp(s string) string {
+	// Date_Created, Transaction_Date, etc.  Convert dates from MySQL to Engage.
+	p := strings.Split(s, " ")
+	if len(p) >= 7 {
+		//Pull out the timezone.
+		p = append(p[0:5], p[6])
+		x := strings.Join(p, " ")
+		t, err := time.Parse(ParseFmt, x)
+		if err != nil {
+			log.Printf("Warning: parsing %v returned %v\n", s, err)
+		} else {
+			s = t.Format(TimestampFormat)
 		}
 	}
 	return s
