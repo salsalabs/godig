@@ -9,9 +9,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//ParseFmt is used to parse a Salsa database mesasge.  NOote that the only
+//ParseFormat is used to parse a Salsa database mesasge.  NOote that the only
 //way to do that is to remove the hour offset before parsing.  See `date()`.
-const ParseFmt = "Mon Jan 2 2006 15:04:05 (MST)"
+const ParseFormat = "Mon Jan 2 2006 15:04:05 (MST)"
 
 //DateFormat is used to format a time so that Engage will recognize it.
 const DateFormat = "2006-01-02"
@@ -135,7 +135,7 @@ func EngageDate(s string) string {
 		//Pull out the timezone.
 		p = append(p[0:5], p[6])
 		x := strings.Join(p, " ")
-		t, err := time.Parse(ParseFmt, x)
+		t, err := time.Parse(ParseFormat, x)
 		if err != nil {
 			log.Printf("Warning: parsing %v returned %v\n", s, err)
 		} else {
@@ -154,7 +154,7 @@ func EngageTimestamp(s string) string {
 		//Pull out the timezone.
 		p = append(p[0:5], p[6])
 		x := strings.Join(p, " ")
-		t, err := time.Parse(ParseFmt, x)
+		t, err := time.Parse(ParseFormat, x)
 		if err != nil {
 			log.Printf("Warning: parsing %v returned %v\n", s, err)
 		} else {
