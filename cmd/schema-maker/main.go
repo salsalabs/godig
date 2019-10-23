@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/salsalabs/godig"
+	"github.com/salsalabs/godig/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 

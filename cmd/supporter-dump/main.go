@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/salsalabs/godig"
+	"github.com/salsalabs/godig/pkg"
 	"github.com/tidwall/gjson"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
