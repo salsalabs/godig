@@ -1,4 +1,3 @@
-//TagTagData reads all tags and all tag data.
 package main
 
 import (
@@ -9,16 +8,16 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-//Fields contains the contents to return.
+//Fields are retrieved from the supporter record.
 type Fields struct {
-	TagKey           string `json:"tag_KEY"`
-	Prefix           string
-	Tag              string
-	DatabaseTableKey string `json:"database_table_KEY"`
-	TableKey         string `json:"table_KEY"`
+	SupporterKey string `json:"supporter_KEY"`
+	FirstName    string `json:"First_Name"`
+	LastName     string `json:"Last_Name"`
+	Email        string
 }
 
-//All reads all of the records and sends them to a Fields channel.
+//All reads from Salsa via the API.  If the criteria is not empty,
+//then records that match that criteria are returned.  Each read
 //parses the buffer for records then outputs them to cout.
 func All(t *godig.Table, crit string, cout chan Fields) {
 	offset := int32(0)
@@ -29,7 +28,7 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 			log.Printf("All: %v offset %6d\n", t.Name, offset)
 		}
 		var a []Fields
-		err := t.LeftJoin(offset, count, crit, &a)
+		err := t.Many(offset, count, crit, &a)
 		if err != nil {
 			log.Fatalf("All: %v offset %6d %v\n", t.Name, offset, err)
 			close(cout)
@@ -44,14 +43,14 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 		for _, r := range a {
 			cout <- r
 		}
-		offset = offset + int32(count)
+		offset = offset + count
 	}
 }
 
-//Use reads Fields records from a channel and displays them.
+//Use accepts Fields records from a channel and displays them.
 func Use(cin chan Fields) {
-	for r := range cin {
-		log.Printf("Use: %+v\n", r)
+	for f := range cin {
+		log.Printf("%s %s\n", f.SupporterKey, f.Email)
 	}
 }
 
@@ -66,7 +65,7 @@ func main() {
 		log.Fatalf("Authentication error: %+v\n", err)
 	}
 
-	t := a.NewTable("tag(tag_KEY)tag_data")
+	t := a.Supporter()
 	count, err := t.Count("")
 	log.Printf("Main: %v count is %v, err is %v\n", t.Name, count, err)
 	if err != nil {

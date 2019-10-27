@@ -103,7 +103,6 @@ func Use(cin chan Fields, stats FieldMap) {
 func main() {
 	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
-	blasts := kingpin.Flag("blast_KEYS", "Only these email blasts").PlaceHolder("BLAST_KEYS").String()
 	kingpin.Parse()
 
 	a, err := godig.YAMLAuth(*cpath)
@@ -129,14 +128,13 @@ func main() {
 	//     ON td.tag_KEY = td.tag_KEY
 	// JOIN donation d
 	//     ON td.table_KEY = donation.donation_KEY
-	// WHERE td.database_table_KEY = 45
-	// AND eb.email_blast_KEY IN ([[BLAST_KEYS]])
+	// WHERE td.database_table_KEY = 45;
 
 	clauses := []string{"tag(tag_KEY)",
 		"tag_data(tag.tag=email_blast_KEY)",
 		"email_blast(tag_data.table_KEY=donation_KEY)",
 		"donation"}
-	cond := fmt.Sprintf("tag_data.database_table_KEY=45&condition=tag.prefix=email_blast&condition=email_blast.email_blast_KEY IN %s", *blasts)
+	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast"
 
 	results := ""
 	buf := bytes.NewBufferString(results)
