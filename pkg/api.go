@@ -81,15 +81,15 @@ func (t *Table) Delete(key string, target interface{}) error {
 	return err
 }
 
-//Describe shows returns the table structure as an array of field descriptors.
-func (t *Table) Describe(target interface{}) error {
+//Describe returns the table structure as an array of field descriptors.
+func (t *Table) Describe() (f FieldList, err error) {
 	p := "https://%s/api/describe2.sjs?json&object=%s"
 	x := fmt.Sprintf(p, t.Host, t.Name)
 	_, body, err := t.Get(x)
 	if err == nil {
-		err = json.Unmarshal(body, target)
+		err = json.Unmarshal(body, &f)
 	}
-	return err
+	return f, err
 }
 
 //Get reads the provided URL and returns the HTTP response, a body and an error.

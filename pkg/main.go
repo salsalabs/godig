@@ -55,15 +55,21 @@ type DeleteStatus struct {
 	Messages []string
 }
 
-//Fields are the fields returned when calling Describe.
-//Describe returns an array of Fields.
-type Fields struct {
-	Name         string
-	Nullable     string
-	Type         string
-	DefaultValue string `json:"defaultValue"`
-	Label        string
+//Field is used to describe table fields when calling Describe.
+type Field struct {
+	DisplayToSupporters string `json:"display_to_supporters,omitempty"`
+	Name                string `json:"name,omitempty"`
+	DataColumn          string `json:"data_column,omitempty"`
+	IsAZeroIndexEnum    bool   `json:"is_a_zero_index_enum,string,omitempty"`
+	Label               string `json:"label,omitempty"`
+	DataTable           string `json:"data_table,omitempty"`
+	DisplayName         string `json:"displayName,omitempty"`
+	Type                string `json:"type,omitempty"`
+	IsCustom            bool   `json:"isCustom,omitempty,string"`
 }
+
+//FieldList is a slice of Fields returned by Describe.
+type FieldList []Field
 
 //MapList is a slice of FieldMaps.
 type MapList []gjson.Result
