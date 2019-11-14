@@ -196,10 +196,10 @@ func EngageTimestamp(s string) string {
 //Be aware that the bulk of the non-identity and non-status fields
 //have been deprecated.
 type Organization struct {
-	OrganizationKEY                            string `json:"organization_KEY"`
-	RootKEY                                    string `json:"root_KEY,omitempty"`
-	ParentKEY                                  string `json:"parent_KEY,omitempty"`
-	PartnerKEY                                 string `json:"partner_KEY,omitempty"`
+	OrganizationKey                            string `json:"organization_KEY"`
+	RootKey                                    string `json:"root_KEY,omitempty"`
+	ParentKey                                  string `json:"parent_KEY,omitempty"`
+	PartnerKey                                 string `json:"partner_KEY,omitempty"`
 	LastModified                               string `json:"Last_Modified,omitempty"`
 	DateCreated                                string `json:"Date_Created,omitempty"`
 	PRIVATEDateCreated                         string `json:"PRIVATE_Date_Created,omitempty"`
