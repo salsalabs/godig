@@ -24,10 +24,11 @@ const TimestampFormat = "2006-01-02T15:04:05"
 //API hold the data that we need to do Salsa API calls.  That includes
 //the cookies from authentication.
 type API struct {
-	Client  *http.Client
-	Cookies []*http.Cookie
-	Host    string
-	Verbose bool
+	Client   *http.Client
+	Cookies  []*http.Cookie
+	Host     string
+	Verbose  bool
+	CredData CredData
 }
 
 //Table links an API to a Salsa database table.

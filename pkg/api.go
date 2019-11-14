@@ -38,6 +38,7 @@ func (a *API) Authenticate(c CredData) error {
 	if err == nil {
 		a.Host = c.Host
 		a.Cookies = resp.Cookies()
+		a.CredData = c
 	}
 	return err
 }
