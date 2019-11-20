@@ -98,6 +98,11 @@ func (a *API) NewTable(n string) Table {
 	return t
 }
 
+//Chapter is a shortcut for creating an organization Table object.
+func (a *API) Chapter() Table {
+	return a.NewTable("chapter")
+}
+
 //Donation is a shortcut for creating a donation Table object.
 func (a *API) Donation() Table {
 	return a.NewTable("donation")
@@ -118,7 +123,7 @@ func (a *API) Groups() Table {
 //via the supporter_groups table. Use LeftJoin to get data for
 //this object.
 func (a *API) GroupsSupporters() Table {
-	return a.NewTable("groups(groups_KEY)supporter_groups(supporter_KEY)supporter")
+	return a.NewTable("groups(groups_Key)supporter_groups(supporter_Key)supporter")
 }
 
 //Org is a shortcut for creating an organization Table object.
@@ -135,7 +140,7 @@ func (a *API) Supporter() Table {
 //holds supporter and donation records.  Use LeftJoin to get
 //data for this object.
 func (a *API) SupporterDonation() Table {
-	return a.NewTable("supporter(supporter_KEY)donation")
+	return a.NewTable("supporter(supporter_Key)donation")
 }
 
 //SupporterGroups is a shortcut for creating a supporter_group Table object.
@@ -197,9 +202,9 @@ func EngageTimestamp(s string) string {
 //have been deprecated.
 type Organization struct {
 	OrganizationKey                            string `json:"organization_KEY"`
-	RootKey                                    string `json:"root_KEY,omitempty"`
-	ParentKey                                  string `json:"parent_KEY,omitempty"`
-	PartnerKey                                 string `json:"partner_KEY,omitempty"`
+	RootKey                                    string `json:"root_Key,omitempty"`
+	ParentKey                                  string `json:"parent_Key,omitempty"`
+	PartnerKey                                 string `json:"partner_Key,omitempty"`
 	LastModified                               string `json:"Last_Modified,omitempty"`
 	DateCreated                                string `json:"Date_Created,omitempty"`
 	PRIVATEDateCreated                         string `json:"PRIVATE_Date_Created,omitempty"`
@@ -242,7 +247,7 @@ type Organization struct {
 	ClosedDate                                 string `json:"Closed_Date,omitempty"`
 	ClosedReason                               string `json:"Closed_Reason,omitempty"`
 	DefaultEmailAddress                        string `json:"default_email_address,omitempty"`
-	DefaultMerchantAccountKEY                  string `json:"default_merchant_account_KEY,omitempty"`
+	DefaultMerchantAccountKey                  string `json:"default_merchant_account_Key,omitempty"`
 	MovedBOOLVALUE                             string `json:"moved_BOOLVALUE,omitempty"`
 	Moved                                      bool   `json:"moved,omitempty"`
 	BlastNotificationEmail                     string `json:"Blast_Notification_Email,omitempty"`
@@ -274,4 +279,35 @@ type Organization struct {
 	EnforceAutodedupeOnEmailSend               bool   `json:"enforce_autodedupe_on_email_send,omitempty"`
 	EnforceHTTPSBOOLVALUE                      string `json:"enforce_https_BOOLVALUE,omitempty"`
 	EnforceHTTPS                               bool   `json:"enforce_https,omitempty"`
+}
+
+//Chapter describes a chapter for an organization.  Chapters may be rooted at the
+//"national" (organization) level, or may be rooted in other chapters.
+type Chapter struct {
+	ChapterKey         string `json:"chapter_KEY"`
+	OrganizationKey    string `json:"organization_KEY"`
+	ParentKey          string `json:"parent_KEY,omitempty"`
+	ChapterTypeKey     string `json:"chapter_type_KEY"`
+	LastModified       string `json:"Last_Modified"`
+	DateCreated        string `json:"Date_Created"`
+	Name               string `json:"Name"`
+	READONLYShortName  string `json:"READONLY_Short_Name,omitempty"`
+	Description        string `json:"Description,omitempty"`
+	Official           bool   `json:"Official,omitempty"`
+	Chartered          bool   `json:"Chartered,omitempty"`
+	ChapterType        string `json:"Chapter_Type,omitempty"`
+	HomepageURL        string `json:"Homepage_URL,omitempty"`
+	Slogan             string `json:"Slogan,omitempty"`
+	Municipality       string `json:"municipality,omitempty"`
+	Region             string `json:"region,omitempty"`
+	PostalCode         string `json:"postal_code,omitempty"`
+	Country            string `json:"Country,omitempty"`
+	Status             string `json:"Status,omitempty"`
+	SiteID             string `json:"siteID,omitempty"`
+	Latitude           string `json:"Latitude,omitempty"`
+	Longitude          string `json:"Longitude,omitempty"`
+	Privacy            string `json:"Privacy,omitempty"`
+	BaseURL            string `json:"Base_URL,omitempty"`
+	SecureURL          string `json:"Secure_URL,omitempty"`
+	SyndicationOptions string `json:"Syndication_Options,omitempty"`
 }
