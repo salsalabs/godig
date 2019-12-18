@@ -169,6 +169,9 @@ func ShortDate(s string) string {
 //EngageDate parses converts a string containing a MySQL date to
 //another string containing an Engage date.
 func EngageDate(s string) string {
+	if len(s) == 0 {
+		return s
+	}
 	t, err := time.Parse(ClassicDateFormat, s)
 	if err != nil {
 		log.Printf("Warning: parsing %v returned %v\n", s, err)
@@ -187,6 +190,9 @@ func EngageTimestamp(s string) string {
 		//Pull out the timezone.
 		p = append(p[0:5], p[6])
 		x := strings.Join(p, " ")
+		if len(x) == 0 {
+			return x
+		}
 		t, err := time.Parse(ClassicDateFormat, x)
 		if err != nil {
 			log.Printf("Warning: parsing %v returned %v\n", s, err)
