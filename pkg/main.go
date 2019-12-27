@@ -155,9 +155,7 @@ func (a *API) Publish() Table {
 
 //ClassicTime accepts a Classic timestamp and returns a time object.
 func ClassicTime(s string) (t time.Time, err error) {
-	log.Printf("ClassicTime: Parsing `%v`\n", s)
 	t, err = time.Parse(ClassicDateFormat, s)
-	log.Printf("ClassicTime: returning %v, %v\n", t, err)
 	return t, err
 }
 
