@@ -153,6 +153,14 @@ func (a *API) Publish() Table {
 	return a.NewTable("publish")
 }
 
+//ClassicTime accepts a Classic timestamp and returns a time object.
+func ClassicTime(s string) (t time.Time, err error) {
+	log.Printf("ClassicTime: Parsing `%v`\n", s)
+	t, err = time.Parse(ClassicDateFormat, s)
+	log.Printf("ClassicTime: returning %v, %v\n", t, err)
+	return t, err
+}
+
 //ShortDate accepts a time and outputs it as YYYY-mm-dd.
 func ShortDate(s string) string {
 	s = strings.TrimSpace(s)
