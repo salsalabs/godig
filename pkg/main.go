@@ -182,7 +182,8 @@ func EngageDate(s string) string {
 	if err != nil {
 		log.Printf("Warning: parsing %v returned %v\n", s, err)
 	} else {
-		s = t.Format(EngageDateFormat)
+		// Engage cannot import EngageDateFormat.  Use DateFormat instead.
+		s = t.Format(DateFormat)
 	}
 	return s
 }
