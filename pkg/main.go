@@ -68,12 +68,13 @@ type DeleteStatus struct {
 
 //Field is used to describe table fields when calling Describe.
 type Field struct {
-	MaxLength    string `json:"maxlength,omitempty"`
-	Name         string `json:"name,omitempty"`
-	Nullable     string `json:"nullable,omitempty"`
-	Type         string `json:"type,omitempty"`
-	DefaultValue string `json:"defaultValue,omitempty"`
-	Label        string `json:"label,omitempty"`
+	Name         string   `json:"name,omitempty"`
+	Nullable     string   `json:"nullable,omitempty"`
+	Type         string   `json:"type,omitempty"`
+	DefaultValue string   `json:"defaultValue,omitempty"`
+	Label        string   `json:"label,omitempty"`
+	MaxLength    string   `json:"maxlength,omitempty"`
+	Values       []string `json:"values,omitempty"`
 }
 
 //FieldList is a slice of Fields returned by Describe.
