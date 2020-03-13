@@ -68,7 +68,7 @@ type DeleteStatus struct {
 
 //Field is used to describe table fields when calling Describe.
 type Field struct {
-	Maxlength    string `json:"maxlength,omitempty"`
+	MaxLength    string `json:"maxlength,omitempty"`
 	Name         string `json:"name,omitempty"`
 	Nullable     string `json:"nullable,omitempty"`
 	Type         string `json:"type,omitempty"`
