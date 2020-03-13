@@ -66,7 +66,7 @@ type DeleteStatus struct {
 	Messages []string
 }
 
-//Field is used to describe table fields when calling Describe.
+//Field is used to describe table fields when calling Desfcribe.
 type Field struct {
 	Name         string   `json:"name,omitempty"`
 	Nullable     string   `json:"nullable,omitempty"`
