@@ -68,15 +68,12 @@ type DeleteStatus struct {
 
 //Field is used to describe table fields when calling Describe.
 type Field struct {
-	DisplayToSupporters string `json:"display_to_supporters,omitempty"`
-	Name                string `json:"name,omitempty"`
-	DataColumn          string `json:"data_column,omitempty"`
-	IsAZeroIndexEnum    bool   `json:"is_a_zero_index_enum,string,omitempty"`
-	Label               string `json:"label,omitempty"`
-	DataTable           string `json:"data_table,omitempty"`
-	DisplayName         string `json:"displayName,omitempty"`
-	Type                string `json:"type,omitempty"`
-	IsCustom            bool   `json:"isCustom,omitempty,string"`
+	Maxlength    string `json:"maxlength,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Nullable     string `json:"nullable,omitempty"`
+	Type         string `json:"type,omitempty"`
+	DefaultValue string `json:"defaultValue,omitempty"`
+	Label        string `json:"label,omitempty"`
 }
 
 //FieldList is a slice of Fields returned by Describe.
