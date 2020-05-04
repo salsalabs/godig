@@ -68,15 +68,17 @@ type DeleteStatus struct {
 
 //Field is used to describe table fields when calling Desfcribe.
 type Field struct {
-	Name         string   `json:"name,omitempty"`
-	Nullable     string   `json:"nullable,omitempty"`
-	Type         string   `json:"type,omitempty"`
-	DefaultValue string   `json:"defaultValue,omitempty"`
-	Label        string   `json:"label,omitempty"`
-	MaxLength    string   `json:"maxlength,omitempty"`
-	Values       []string `json:"values,omitempty"`
-	IsCustom     bool     `json:"isCustom,omitEmpty"`
-	DisplayName  string   `json:"displayName,omitEmpty"`
+	Name         string `json:"name,omitempty"`
+	Nullable     string `json:"nullable,omitempty"`
+	Type         string `json:"type,omitempty"`
+	DefaultValue string `json:"defaultValue,omitempty"`
+	Label        string `json:"label,omitempty"`
+	MaxLength    string `json:"maxlength,omitempty"`
+	IsCustom     string `json:"isCustom,omitEmpty"`
+	DisplayName  string `json:"displayName,omitEmpty"`
+	// Values is either a struct or a list of strings in Salsa.
+	// No return on special marshaler.  Ignoring.
+	//Values       []string `json:"values,omitempty"`
 }
 
 //FieldList is a slice of Fields returned by Describe.
