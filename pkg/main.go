@@ -75,6 +75,8 @@ type Field struct {
 	Label        string   `json:"label,omitempty"`
 	MaxLength    string   `json:"maxlength,omitempty"`
 	Values       []string `json:"values,omitempty"`
+	IsCustom     bool     `json:"isCustom,omitEmpty"`
+	DisplayName  string   `json:"displayName,omitEmpty"`
 }
 
 //FieldList is a slice of Fields returned by Describe.
