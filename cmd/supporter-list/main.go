@@ -4,16 +4,16 @@ import (
 	"log"
 	"sync"
 
-	"github.com/salsalabs/godig/pkg"
+	godig "github.com/salsalabs/godig/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 //Fields are retrieved from the supporter record.
 type Fields struct {
 	SupporterKey string `json:"supporter_KEY"`
-	FirstName    string `json:"First_Name"`
-	LastName     string `json:"Last_Name"`
-	Email        string
+	FirstName    string `json:"First_Name,omitempty"`
+	LastName     string `json:"Last_Name,omitempty"`
+	Email        string `json:"Email,omitempty"`
 }
 
 //All reads from Salsa via the API.  If the criteria is not empty,
@@ -43,7 +43,7 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 		for _, r := range a {
 			cout <- r
 		}
-		offset = offset + count
+		offset = offset + int32(count)
 	}
 }
 
@@ -56,7 +56,7 @@ func Use(cin chan Fields) {
 
 //Mainline.  Find supporters and display some info about each.
 func main() {
-	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+	cpath := kingpin.Flag("login", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
 	kingpin.Parse()
 
