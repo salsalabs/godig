@@ -87,9 +87,10 @@ func (t *Table) Describe() (f FieldList, err error) {
 	p := "https://%s/api/describe2.sjs?json&object=%s"
 	x := fmt.Sprintf(p, t.Host, t.Name)
 	_, body, err := t.Get(x)
-	if err == nil {
-		err = json.Unmarshal(body, &f)
+	if err != nil {
+		return f, err
 	}
+	err = json.Unmarshal(body, &f)
 	return f, err
 }
 
