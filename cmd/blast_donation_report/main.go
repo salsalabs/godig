@@ -1,34 +1,46 @@
-//TagTagData reads all tags and all tag data.
+// Application to attribute donations to email blasts, then
+// create a report.  Attribution is via the "email_blast" tags
+// that Salsa adds for any donation attributable to a blast.
 package main
 
 import (
 	"encoding/csv"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	godig "github.com/salsalabs/godig/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-//form is the date format.
-const form = "Mon Jan 02 2006 15:04:05 GMT-0700 (MST)"
+const outFile = "blast_donation_report.csv"
 
 //Fields contains the contents to return.
 type Fields struct {
-	Tag             string
-	EmailBlastKey   string `json:"email_blast_KEY"`
-	Subject         string
-	DateCreated     string `json:"Date_Created"`
-	DonationKEY     string `json:"donation_KEY"`
-	TransactionDate string `json:"Transaction_Date"`
-	TransactionType string `json:"Transaction_Type"`
-	Result          string
-	Amount          string
+	Tag           string
+	EmailBlastKey string `json:"email_blast_KEY"`
+	Subject       string `json:"Subject"`
+	Result        string `json:"Result"`
+	Amount        string `json:"Amount"`
 }
+
+//Stats contains an email blast and some statistic donations.
+type Stats struct {
+	EmailBlastKey string
+	Subject       string
+	Count         int
+	Min           float64
+	Max           float64
+	Sum           float64
+	Avg           float64
+}
+
+//FieldMap is a mpa of email blast keys and some donation stats.
+type FieldMap map[string]*Stats
 
 //All reads all of the records and sends them to a Fields channel.
 //parses the buffer for records then outputs them to cout.
@@ -58,29 +70,29 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 		}
 		offset = offset + int32(count)
 	}
+	close(cout)
 }
 
-//Use reads Fields records from a channel and displays them.
-func Use(cin chan Fields, w *csv.Writer) {
-	w.Write(strings.Split("EmailBlastKey,Subject,DateCreated,DonationKey,TransactionDate,TransactionType,Result,Amount", ","))
+//Use reads Fields records from a channel and accumulates
+//statistical info by email blast.
+func Use(cin chan Fields, stats FieldMap) {
 	for r := range cin {
-		var a []string
-		a = append(a, r.EmailBlastKey)
-		a = append(a, r.Subject)
-		t, _ := time.Parse(form, r.DateCreated)
-		s := t.Format("2006-01-02")
-		a = append(a, s)
-		a = append(a, r.DonationKEY)
-		t, _ = time.Parse(form, r.TransactionDate)
-		s = t.Format("2006-01-02")
-		a = append(a, s)
-		a = append(a, r.TransactionType)
-		a = append(a, r.Result)
-		a = append(a, r.Amount)
-		err := w.Write(a)
-		if err != nil {
-			fmt.Printf("Use: error %v writing %v\n", err, a)
+		v, _ := strconv.ParseFloat(r.Amount, 64)
+		_, ok := stats[r.EmailBlastKey]
+		if !ok {
+			s := Stats{EmailBlastKey: r.EmailBlastKey, Subject: r.Subject}
+			stats[r.EmailBlastKey] = &s
 		}
+		x, _ := stats[r.EmailBlastKey]
+		x.Count = x.Count + 1
+		if x.Min == 0.0 {
+			x.Min = v
+		} else {
+			x.Min = math.Min(x.Min, v)
+		}
+		x.Max = math.Max(x.Max, v)
+		x.Sum = x.Sum + v
+		x.Avg = x.Sum / float64(x.Count)
 	}
 }
 
@@ -89,7 +101,7 @@ func main() {
 	var (
 		cpath      = kingpin.Flag("login", "YAML file of login credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 		crit       = kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
-		apiVerbose = kingpin.Flag("apiVerbose", "Show JSON results from Salsa.  Very noisy...").Bool()
+		apiVerbose = kingpin.Flag("apiVerbose", "Show responses from Salsa.  Can be very noisy.").Bool()
 	)
 	kingpin.Parse()
 
@@ -123,27 +135,20 @@ func main() {
 		"tag_data(tag.tag=email_blast_KEY)",
 		"email_blast(tag_data.table_KEY=donation_KEY)",
 		"donation"}
-	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast"
+	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast&donation.RESULT IN (0,-1)"
 
+	stats := make(FieldMap)
 	tableName := strings.Join(clauses, "")
 	t := a.NewTable(tableName)
 
 	c := make(chan Fields, 100)
 	var wg sync.WaitGroup
 
-	f, err := os.Create("blast_donation_report.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	writer := csv.NewWriter(f)
-
 	log.Println("Main: start")
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		Use(c, writer)
-		writer.Flush()
+		Use(c, stats)
 	}(&wg)
 	log.Println("Main: Use started")
 	wg.Add(1)
@@ -158,4 +163,39 @@ func main() {
 
 	log.Println("Main: waiting...")
 	wg.Wait()
+
+	f, err := os.Create(outFile)
+	if err != nil {
+		log.Fatalf("%v, %s\n", err, outFile)
+	}
+	defer f.Close()
+	w := csv.NewWriter(f)
+	if err != nil {
+		log.Fatalf("%v, %s\n", err, outFile)
+	}
+	headers := []string{
+		"EmailBlastKey",
+		"Subject",
+		"Count",
+		"Min",
+		"Max",
+		"Avg",
+		"Sum",
+	}
+	w.Write(headers)
+	for _, x := range stats {
+		row := []string{
+			x.EmailBlastKey,
+			x.Subject,
+			fmt.Sprintf("%d", x.Count),
+			fmt.Sprintf("%.2f", x.Min),
+			fmt.Sprintf("%.2f", x.Max),
+			fmt.Sprintf("%.2f", x.Avg),
+			fmt.Sprintf("%.2f", x.Sum),
+		}
+		w.Write(row)
+	}
+	w.Flush()
+
+	log.Printf("Main: done, results in %s", outFile)
 }

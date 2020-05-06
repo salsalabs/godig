@@ -107,7 +107,7 @@ func Use(cin chan Fields, stats FieldMap) {
 //Mainline.  Find supporters and display some info about each.
 func main() {
 	var (
-		cpath      = kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+		cpath      = kingpin.Flag("login", "YAML file of credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 		crit       = kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
 		apiVerbose = kingpin.Flag("apiVerbose", "Show responses from Salsa.  Can be very noisy.").Bool()
 	)
