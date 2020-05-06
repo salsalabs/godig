@@ -2,19 +2,20 @@
 package main
 
 import (
-	"bytes"
+	"encoding/csv"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"math"
-	"strconv"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/salsalabs/godig/pkg"
+	godig "github.com/salsalabs/godig/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
+
+//form is the date format.
+const form = "Mon Jan 02 2006 15:04:05 GMT-0700 (MST)"
 
 //Fields contains the contents to return.
 type Fields struct {
@@ -29,41 +30,26 @@ type Fields struct {
 	Amount          string
 }
 
-//Stats contains an email blast and some statistic donations.
-type Stats struct {
-	EmailBlastKey string `json:"email_blast_KEY"`
-	Subject       string
-	DateCreated   string
-	Count         int
-	Min           float64
-	Max           float64
-	Sum           float64
-	Avg           float64
-}
-
-//FieldMap is a mpa of email blast keys and some donation stats.
-type FieldMap map[string]*Stats
-
 //All reads all of the records and sends them to a Fields channel.
 //parses the buffer for records then outputs them to cout.
 func All(t *godig.Table, crit string, cout chan Fields) {
 	offset := int32(0)
 	count := 500
 	for count > 0 {
-		log.Printf("All: %v offset %6d\n", t.Name, offset)
+		log.Printf("All: offset %6d\n", offset)
 		if offset > 0 && offset%5000 == 0 {
-			log.Printf("All: %v offset %6d\n", t.Name, offset)
+			log.Printf("All: offset %6d\n", offset)
 		}
 		var a []Fields
 		err := t.LeftJoin(offset, count, crit, &a)
 		if err != nil {
-			log.Fatalf("All: %v offset %6d %v\n", t.Name, offset, err)
+			log.Fatalf("All: offset %6d %v\n", offset, err)
 			close(cout)
 			return
 		}
 		count = len(a)
 		if count == 0 {
-			log.Printf("All: %v offset %6d, done\n", t.Name, offset)
+			log.Printf("All: offset %6d, done\n", offset)
 			close(cout)
 			return
 		}
@@ -75,40 +61,43 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 }
 
 //Use reads Fields records from a channel and displays them.
-func Use(cin chan Fields, stats FieldMap) {
+func Use(cin chan Fields, w *csv.Writer) {
+	w.Write(strings.Split("EmailBlastKey,Subject,DateCreated,DonationKey,TransactionDate,TransactionType,Result,Amount", ","))
 	for r := range cin {
-		v, _ := strconv.ParseFloat(r.Amount, 64)
-		_, ok := stats[r.EmailBlastKey]
-		if !ok {
-			s := Stats{EmailBlastKey: r.EmailBlastKey, Subject: r.Subject}
-			const form = "Mon Jan 02 2006 15:04:05 GMT-0700 (MST)"
-			t, _ := time.Parse(form, r.DateCreated)
-			s.DateCreated = t.Format("2006-01-02")
-			stats[r.EmailBlastKey] = &s
+		var a []string
+		a = append(a, r.EmailBlastKey)
+		a = append(a, r.Subject)
+		t, _ := time.Parse(form, r.DateCreated)
+		s := t.Format("2006-01-02")
+		a = append(a, s)
+		a = append(a, r.DonationKEY)
+		t, _ = time.Parse(form, r.TransactionDate)
+		s = t.Format("2006-01-02")
+		a = append(a, s)
+		a = append(a, r.TransactionType)
+		a = append(a, r.Result)
+		a = append(a, r.Amount)
+		err := w.Write(a)
+		if err != nil {
+			fmt.Printf("Use: error %v writing %v\n", err, a)
 		}
-		x, _ := stats[r.EmailBlastKey]
-		x.Count = x.Count + 1
-		if x.Min == 0.0 {
-			x.Min = v
-		} else {
-			x.Min = math.Min(x.Min, v)
-		}
-		x.Max = math.Max(x.Max, v)
-		x.Sum = x.Sum + v
-		x.Avg = x.Sum / float64(x.Count)
 	}
 }
 
 //Mainline.  Find supporters and display some info about each.
 func main() {
-	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
-	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
+	var (
+		cpath      = kingpin.Flag("login", "YAML file of login credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+		crit       = kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
+		apiVerbose = kingpin.Flag("apiVerbose", "Show JSON results from Salsa.  Very noisy...").Bool()
+	)
 	kingpin.Parse()
 
 	a, err := godig.YAMLAuth(*cpath)
 	if err != nil {
 		log.Fatalf("Authentication error: %+v\n", err)
 	}
+	a.Verbose = *apiVerbose
 
 	// It turns out that conditions will not only join on table1(table1 primary key)table2,
 	// they will also join on something like table1(table1.whatever=table2.whatever)table2.
@@ -136,21 +125,24 @@ func main() {
 		"donation"}
 	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast"
 
-	results := ""
-	buf := bytes.NewBufferString(results)
-
-	stats := make(FieldMap)
 	tableName := strings.Join(clauses, "")
 	t := a.NewTable(tableName)
 
 	c := make(chan Fields, 100)
 	var wg sync.WaitGroup
 
+	f, err := os.Create("results.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	writer := csv.NewWriter(f)
+
 	log.Println("Main: start")
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		Use(c, stats)
+		Use(c, writer)
 	}(&wg)
 	log.Println("Main: Use started")
 	wg.Add(1)
@@ -165,12 +157,4 @@ func main() {
 
 	log.Println("Main: waiting...")
 	wg.Wait()
-
-	fmt.Fprintf(buf, "EmailBlastKey\tSubject\tDate\tCount\tMin\tMax\tAvg\tSum\n")
-	for _, x := range stats {
-		fmt.Fprintf(buf, "%v\t%v\t%v\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n", x.EmailBlastKey, x.Subject, x.DateCreated, x.Count, x.Min, x.Max, x.Avg, x.Sum)
-	}
-	err = ioutil.WriteFile("results.tsv", buf.Bytes(), 0666)
-
-	log.Println("Main: done, results in results.tsv")
 }
