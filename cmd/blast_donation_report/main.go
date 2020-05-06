@@ -131,7 +131,7 @@ func main() {
 	c := make(chan Fields, 100)
 	var wg sync.WaitGroup
 
-	f, err := os.Create("results.csv")
+	f, err := os.Create("blast_donation_report.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -143,6 +143,7 @@ func main() {
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
 		Use(c, writer)
+		writer.Flush()
 	}(&wg)
 	log.Println("Main: Use started")
 	wg.Add(1)
