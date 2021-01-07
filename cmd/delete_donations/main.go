@@ -63,6 +63,8 @@ func whack(i int, f string, t *godig.Table, c chan string, done chan bool) {
 			for _, m := range ds.Messages {
 				log.Printf("whack-%s-%02d: key %s, %s %s\n", f, i, k, ds.Result, m)
 			}
+		} else {
+			log.Printf("whack-%s-%02d: key %s, %s\n", f, i, k, ds.Result)
 		}
 	}
 	done <- true
