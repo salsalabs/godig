@@ -1,4 +1,4 @@
-// Cleanup tool.  Accept a date range for donations.  Delete the donationss
+// Cleanup tool.  Accept a date range for donations.  Delete the donations
 // and the supporters that made them.
 
 package main
