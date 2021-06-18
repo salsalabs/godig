@@ -56,7 +56,6 @@ func main() {
 		log.Fatalf("%s, %s", "names_and_emails.csv", err)
 	}
 	defer w.Flush()
-	defer w.Close()
 	var s []Supporter
 
 	// Each row is a string slice of (Last_Name, First_Name)
