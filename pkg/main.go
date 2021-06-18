@@ -155,6 +155,11 @@ func (a *API) Publish() Table {
 	return a.NewTable("publish")
 }
 
+//Unsubscribe is a shortcut for creating an unsubscribe Table object.
+func (a *API) Unsubscribe() Table {
+	return a.NewTable("unsubscribe")
+}
+
 //ClassicTime accepts a Classic timestamp and returns a time object.
 func ClassicTime(s string) (t time.Time, err error) {
 	t, err = time.Parse(ClassicDateFormat, s)
