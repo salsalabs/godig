@@ -138,7 +138,7 @@ func main() {
 	unsubLast24Hours := CountThese(u, fmt.Sprintf(unsubLast24HoursCriteria, yday, today))
 	activeSupporters := CountThese(t, activeCriteria)
 
-	filename := "/Users/aleonard/Google Drive/My Drive/Clients/Consortium News/daily_readings.csv"
+	filename := "/Users/aleonard/Google Drive/My Drive/Clients/Consortium News/daily_metrics.csv"
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
