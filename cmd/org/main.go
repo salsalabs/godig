@@ -27,7 +27,7 @@ func main() {
 	if len(orgs) == 0 {
 		log.Fatalf("No organizations found for your credentials\n")
 	}
-	fmt.Printf("OrganizationKEY:    %v\n", orgs[0].OrganizationKEY)
+	fmt.Printf("OrganizationKEY:    %v\n", orgs[0].OrganizationKey)
 	fmt.Printf("Name:               %v\n", orgs[0].Name)
 	fmt.Printf("DateCreated:        %v\n", godig.ShortDate(orgs[0].DateCreated))
 	fmt.Printf("LastModified:       %v\n", godig.ShortDate(orgs[0].LastModified))
