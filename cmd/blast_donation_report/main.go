@@ -23,6 +23,7 @@ const outFile = "blast_donation_report.csv"
 type Fields struct {
 	Tag           string
 	EmailBlastKey string `json:"email_blast_KEY"`
+	DateRequested string `json:"Date_Requested"`
 	Subject       string `json:"Subject"`
 	Result        string `json:"Result"`
 	Amount        string `json:"Amount"`
@@ -31,6 +32,7 @@ type Fields struct {
 //Stats contains an email blast and some statistic donations.
 type Stats struct {
 	EmailBlastKey string
+	DateRequested string
 	Subject       string
 	Count         int
 	Min           float64
@@ -175,6 +177,7 @@ func main() {
 	}
 	headers := []string{
 		"EmailBlastKey",
+		"DateRequested",
 		"Subject",
 		"Count",
 		"Min",
@@ -188,6 +191,7 @@ func main() {
 			x.EmailBlastKey,
 			x.Subject,
 			fmt.Sprintf("%d", x.Count),
+			fmt.Sprintf("%s", x.DateRequested),
 			fmt.Sprintf("%.2f", x.Min),
 			fmt.Sprintf("%.2f", x.Max),
 			fmt.Sprintf("%.2f", x.Avg),
