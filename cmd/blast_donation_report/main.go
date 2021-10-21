@@ -98,7 +98,7 @@ func Use(cin chan Fields, stats FieldMap) {
 	}
 }
 
-//Mainline.  Find supporters and display some info about each.
+//Mainline.  Find email blasts and display donation stats.
 func main() {
 	var (
 		cpath      = kingpin.Flag("login", "YAML file of login credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
