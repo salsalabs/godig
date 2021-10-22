@@ -25,7 +25,6 @@ type Fields struct {
 	EmailBlastKey string `json:"email_blast_KEY"`
 	DateRequested string `json:"Date_Requested"`
 	Subject       string `json:"Subject"`
-	Result        string `json:"Result"`
 	Amount        string `json:"Amount"`
 }
 
@@ -98,6 +97,7 @@ func Use(cin chan Fields, stats FieldMap) {
 		x.Max = math.Max(x.Max, v)
 		x.Sum = x.Sum + v
 		x.Avg = x.Sum / float64(x.Count)
+		log.Printf("Use: x is %+v\n", x)
 	}
 }
 
@@ -157,6 +157,7 @@ func main() {
 		Use(c, stats)
 	}(&wg)
 	log.Println("Main: Use started")
+
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
