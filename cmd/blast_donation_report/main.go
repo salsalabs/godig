@@ -22,16 +22,16 @@ const outFile = "blast_donation_report.csv"
 //Fields contains the contents to return.
 type Fields struct {
 	Tag           string
-	EmailBlastKey string `json:"email_blast_KEY"`
-	DateRequested string `json:"Date_Requested"`
-	Subject       string `json:"Subject"`
-	Amount        string `json:"Amount"`
+	EmailBlastKey string                `json:"email_blast_KEY"`
+	DateRequested *godig.SalsaTimestamp `json:"Date_Requested"`
+	Subject       string                `json:"Subject"`
+	Amount        string                `json:"Amount"`
 }
 
 //Stats contains an email blast and some statistic donations.
 type Stats struct {
 	EmailBlastKey string
-	DateRequested string
+	DateRequested *godig.SalsaTimestamp
 	Subject       string
 	Count         int
 	Min           float64
@@ -40,16 +40,12 @@ type Stats struct {
 	Avg           float64
 }
 
-//FieldMap is a mpa of email blast keys and some donation stats.
-type FieldMap map[string]*Stats
-
 //All reads all of the records and sends them to a Fields channel.
 //parses the buffer for records then outputs them to cout.
 func All(t *godig.Table, crit string, cout chan Fields) {
 	offset := int32(0)
 	count := 500
 	for count > 0 {
-		log.Printf("All: offset %6d\n", offset)
 		if offset > 0 && offset%5000 == 0 {
 			log.Printf("All: offset %6d\n", offset)
 		}
@@ -74,31 +70,93 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 	close(cout)
 }
 
+//Store reads stats from a channel and writes them to the CSV file.
+func Store(cin chan Stats, outFile string) error {
+	f, err := os.Create(outFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	w := csv.NewWriter(f)
+	if err != nil {
+		return err
+	}
+	headers := []string{
+		"EmailBlastKey",
+		"DateRequested",
+		"Subject",
+		"Count",
+		"Min",
+		"Max",
+		"Avg",
+		"Sum",
+	}
+	w.Write(headers)
+	w.Flush()
+
+	for {
+		x, ok := <-cin
+		if !ok {
+			break
+		}
+		dateRequested := x.DateRequested.Time.Format(godig.DateFormat)
+
+		row := []string{
+			x.EmailBlastKey,
+			dateRequested,
+			x.Subject,
+			fmt.Sprintf("%d", x.Count),
+			fmt.Sprintf("%.2f", x.Min),
+			fmt.Sprintf("%.2f", x.Max),
+			fmt.Sprintf("%.2f", x.Avg),
+			fmt.Sprintf("%.2f", x.Sum),
+		}
+		w.Write(row)
+		w.Flush()
+	}
+	return nil
+}
+
 //Use reads Fields records from a channel and accumulates
 //statistical info by email blast.
-func Use(cin chan Fields, stats FieldMap) {
-	for r := range cin {
-		v, _ := strconv.ParseFloat(r.Amount, 64)
-		_, ok := stats[r.EmailBlastKey]
+func Use(cin chan Fields, cout chan Stats) {
+	prevKey := ""
+	var s Stats
+
+	for {
+		r, ok := <-cin
 		if !ok {
-			s := Stats{
+			break
+		}
+
+		if r.EmailBlastKey != prevKey {
+			if s.EmailBlastKey != "" {
+				cout <- s
+			}
+			s = Stats{
 				EmailBlastKey: r.EmailBlastKey,
 				DateRequested: r.DateRequested,
 				Subject:       r.Subject}
-			stats[r.EmailBlastKey] = &s
+			prevKey = r.EmailBlastKey
 		}
-		x, _ := stats[r.EmailBlastKey]
-		x.Count = x.Count + 1
-		if x.Min == 0.0 {
-			x.Min = v
+
+		a, _ := strconv.ParseFloat(r.Amount, 64)
+		s.Count = s.Count + 1
+		if s.Min == 0.0 {
+			s.Min = a
 		} else {
-			x.Min = math.Min(x.Min, v)
+			s.Min = math.Min(s.Min, a)
 		}
-		x.Max = math.Max(x.Max, v)
-		x.Sum = x.Sum + v
-		x.Avg = x.Sum / float64(x.Count)
-		log.Printf("Use: x is %+v\n", x)
+		s.Max = math.Max(s.Max, a)
+		s.Sum = s.Sum + a
+		s.Avg = s.Sum / float64(s.Count)
 	}
+
+	if s.EmailBlastKey != "" {
+		cout <- s
+	}
+	close(cout)
+
 }
 
 //Mainline.  Find email blasts and display donation stats.
@@ -143,68 +201,43 @@ func main() {
 		"donation"}
 	cond := "tag_data.database_table_KEY=45&condition=tag.prefix=email_blast&donation.RESULT IN (0,-1)"
 
-	stats := make(FieldMap)
 	tableName := strings.Join(clauses, "")
 	t := a.NewTable(tableName)
 
-	c := make(chan Fields, 100)
+	cin := make(chan Fields, 100)
+	cout := make(chan Stats, 100)
 	var wg sync.WaitGroup
 
 	log.Println("Main: start")
 	wg.Add(1)
-	go func(w *sync.WaitGroup) {
+	go func(cin chan Fields, cout chan Stats, w *sync.WaitGroup) {
 		defer w.Done()
-		Use(c, stats)
-	}(&wg)
+		Use(cin, cout)
+	}(cin, cout, &wg)
 	log.Println("Main: Use started")
 
 	wg.Add(1)
-	go func(w *sync.WaitGroup) {
+	go func(cout chan Stats, w *sync.WaitGroup) {
+		defer w.Done()
+		err := Store(cout, outFile)
+		if err != nil {
+			log.Fatalf("Store: %v\n", err)
+		}
+	}(cout, &wg)
+	log.Println("Main: Store started")
+
+	wg.Add(1)
+	go func(cin chan Fields, w *sync.WaitGroup) {
 		defer w.Done()
 		if len(*crit) != 0 {
 			cond = cond + "&condition=" + *crit
 		}
-		All(&t, cond, c)
-	}(&wg)
+		All(&t, cond, cin)
+	}(cin, &wg)
 	log.Println("Main: All started")
 
 	log.Println("Main: waiting...")
 	wg.Wait()
-
-	f, err := os.Create(outFile)
-	if err != nil {
-		log.Fatalf("%v, %s\n", err, outFile)
-	}
-	defer f.Close()
-	w := csv.NewWriter(f)
-	if err != nil {
-		log.Fatalf("%v, %s\n", err, outFile)
-	}
-	headers := []string{
-		"EmailBlastKey",
-		"DateRequested",
-		"Subject",
-		"Count",
-		"Min",
-		"Max",
-		"Avg",
-		"Sum",
-	}
-	w.Write(headers)
-	for _, x := range stats {
-		row := []string{
-			x.EmailBlastKey,
-			fmt.Sprintf("%s", x.DateRequested),
-			x.Subject,
-			fmt.Sprintf("%d", x.Count),
-			fmt.Sprintf("%.2f", x.Min),
-			fmt.Sprintf("%.2f", x.Max),
-			fmt.Sprintf("%.2f", x.Avg),
-			fmt.Sprintf("%.2f", x.Sum),
-		}
-		w.Write(row)
-	}
-	w.Flush()
 
 	log.Printf("Main: done, results in %s", outFile)
 }
