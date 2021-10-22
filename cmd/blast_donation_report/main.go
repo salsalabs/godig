@@ -82,7 +82,10 @@ func Use(cin chan Fields, stats FieldMap) {
 		v, _ := strconv.ParseFloat(r.Amount, 64)
 		_, ok := stats[r.EmailBlastKey]
 		if !ok {
-			s := Stats{EmailBlastKey: r.EmailBlastKey, Subject: r.Subject}
+			s := Stats{
+				EmailBlastKey: r.EmailBlastKey,
+				DateRequested: r.DateRequested,
+				Subject:       r.Subject}
 			stats[r.EmailBlastKey] = &s
 		}
 		x, _ := stats[r.EmailBlastKey]
@@ -118,6 +121,7 @@ func main() {
 	// This table name does the necessary joins to retrieve donations tagged by email blasts.
 	//
 	// SELECT eb.email_blast_KEY,
+	//			eb.Date_Requested,
 	//          eb.Subject,
 	//          count(d.donation_KEY),
 	//          min(d.amount),
@@ -189,9 +193,9 @@ func main() {
 	for _, x := range stats {
 		row := []string{
 			x.EmailBlastKey,
+			fmt.Sprintf("%s", x.DateRequested),
 			x.Subject,
 			fmt.Sprintf("%d", x.Count),
-			fmt.Sprintf("%s", x.DateRequested),
 			fmt.Sprintf("%.2f", x.Min),
 			fmt.Sprintf("%.2f", x.Max),
 			fmt.Sprintf("%.2f", x.Avg),
