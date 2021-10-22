@@ -1,4 +1,4 @@
-//TagTagData reads all tags and all tag data.
+//Find donations for email blasts and write them to a CSV.
 package main
 
 import (
@@ -64,19 +64,20 @@ func All(t *godig.Table, crit string, cout chan Fields) {
 func Use(cin chan Fields, w *csv.Writer) {
 	w.Write(strings.Split("EmailBlastKey,Subject,DateCreated,DonationKey,TransactionDate,TransactionType,Result,Amount", ","))
 	for r := range cin {
-		var a []string
-		a = append(a, r.EmailBlastKey)
-		a = append(a, r.Subject)
 		t, _ := time.Parse(form, r.DateCreated)
-		s := t.Format("2006-01-02")
-		a = append(a, s)
-		a = append(a, r.DonationKEY)
+		s1 := t.Format(godig.DateFormat)
 		t, _ = time.Parse(form, r.TransactionDate)
-		s = t.Format("2006-01-02")
-		a = append(a, s)
-		a = append(a, r.TransactionType)
-		a = append(a, r.Result)
-		a = append(a, r.Amount)
+		s2 := t.Format(godig.DateFormat)
+
+		a := []string{
+			r.EmailBlastKey,
+			r.Subject,
+			s1,
+			r.DonationKEY,
+			s2,
+			r.TransactionType,
+			r.Result,
+			r.Amount}
 		err := w.Write(a)
 		if err != nil {
 			fmt.Printf("Use: error %v writing %v\n", err, a)
@@ -84,7 +85,7 @@ func Use(cin chan Fields, w *csv.Writer) {
 	}
 }
 
-//Mainline.  Find supporters and display some info about each.
+//Mainline.  Find donations for email blasts and write them to a CSV.
 func main() {
 	var (
 		cpath      = kingpin.Flag("login", "YAML file of login credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
