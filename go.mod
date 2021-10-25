@@ -8,7 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/tidwall/gjson v1.7.5
+	github.com/tidwall/gjson v1.9.3
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v2 v2.4.0
 )
