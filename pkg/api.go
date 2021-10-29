@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -30,12 +31,13 @@ func (a *API) Authenticate(c CredData) error {
 	}
 	var as AuthStatus
 	err = yaml.Unmarshal(body, &as)
-	if err == nil {
-		if as.Status == "error" {
-			err = errors.New(as.Message)
-		}
+	if err == nil && as.Status == "error" {
+		err = errors.New(as.Message)
 	}
-	if err == nil {
+	if err != nil {
+		log.Printf("Authenticate: %v\n", err)
+		log.Printf("Authenticate: %v\n", string(body))
+	} else {
 		a.Host = c.Host
 		a.Cookies = resp.Cookies()
 		a.CredData = c
@@ -62,8 +64,12 @@ func (t *Table) Count(c string) (string, error) {
 func Credentials(p string) (CredData, error) {
 	var c CredData
 	raw, err := ioutil.ReadFile(p)
-	if err == nil {
-		err = yaml.Unmarshal(raw, &c)
+	if err != nil {
+		return c, err
+	}
+	err = yaml.Unmarshal(raw, &c)
+	if err != nil {
+		log.Printf("Credentials: %+v\n", err)
 	}
 	return c, err
 }
