@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/salsalabs/godig/pkg"
+	godig "github.com/salsalabs/godig/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -57,14 +57,16 @@ func Use(cin chan Fields) {
 
 //Mainline.  Find supporters and display some info about each.
 func main() {
-	cpath := kingpin.Flag("credentials", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
+	cpath := kingpin.Flag("login", "YAML file containing credentials for Salsa Classic API").PlaceHolder("FILENAME").Required().String()
 	crit := kingpin.Flag("criteria", "Search for records matching this criteria").PlaceHolder("CRITERIA").String()
+	verbose := kingpin.Flag("verbose", "Show all requests and resonses.  Very ugly.").PlaceHolder("VERBOSE").Bool()
 	kingpin.Parse()
 
 	a, err := godig.YAMLAuth(*cpath)
 	if err != nil {
 		log.Fatalf("Authentication error: %+v\n", err)
 	}
+	a.Verbose = *verbose
 
 	t := a.NewTable("tag(tag_KEY)tag_data")
 	count, err := t.Count("")
